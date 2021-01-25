@@ -19,24 +19,25 @@ a:hover {
 }
 
 div#content {
-	height: 100%;
-  width: 100%;
+	/* height: 100%;
+  width: 100%; */
 
   background-image: url("../images/left_bg.png"), url("../images/right_bg.png");
-  background-position-x: -150px, calc(100vw - 250px);
+  background-position-x: -100px, calc(100vw - 120px);
   background-repeat: no-repeat, no-repeat;
+  background-size: 200px;
 }
 
 div#flex-flow {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	height: 100%;
+	min-height: 100%;
 }
 
 /* Header */
 div#header {
-  position: fixed;
+  /* position: fixed; */
 	flex-shrink: 0;
   left: 0;
   top: 0;
@@ -217,8 +218,22 @@ div#body {
 	display: flex;
   align-items: center;
   flex-direction: column;
-  margin-top: 250px;
+  /* margin-top: 250px; */
   max-width: 900px;
+  padding: 0 10%;
+}
+
+div#body .headline {
+  font-size: 1.5em;
+  font-family: 'Montserrat';
+  margin: 50px 0;
+  border-top: 2px solid black;
+  padding: 20px 20px;
+  border-bottom: 2px solid black;
+}
+div#body .headline span {
+  display: block;
+  text-align: center;
 }
 
 div#body .introduction {
@@ -226,18 +241,25 @@ div#body .introduction {
   justify-content: space-between;
   align-items: center;
   padding: 20px;
-  border: 4px solid black;
-  background-color: #eee;
-  margin: 20px 0;
+  flex-direction: column;
+  /* border: 4px solid black;
+  background-color: #eee; */
+  /* margin: 20px 0; */
 }
 
 div#body .introduction img {
-  width: 100%;
+  /* width: 100%; */
+  width: 300px;
   /* border: 2px solid black; */
-  border-radius: 10px;
+  border-radius: 5px;
 }
-div#body .introduction div.text {
-  padding-left: 30px;
+
+div#body .introduction .text {
+  margin-top: 50px;
+  padding: 15px;
+  background-color: #eee;
+  border: 2px solid #555;
+  text-align: justify;
 }
 
 @media (min-width: 800px) {
@@ -271,9 +293,34 @@ div#body .introduction div.text {
     padding: 0 40px;
   }
 
+  div#body {
+    padding: 0 4%;
+  }
+
+  div#body .headline span {
+    display: inline;
+    text-align: left;
+  }
+  div#body .headline span.not-last::after {
+    content: "\0014\2014\0014"
+  }
+
+  div#body .introduction {
+    flex-direction: row;
+  }
+  div#body .introduction div.text {
+    margin-top: 0;
+    margin-left: 50px;
+  }
+
 }
 
 @media (min-width: 900px) {
+
+  div#content {
+    background-position-x: -90px, calc(100vw - 190px);
+    background-size: 250px;
+  }
 
   div#header {
     width: 900px;
