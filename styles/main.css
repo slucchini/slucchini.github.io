@@ -22,9 +22,9 @@ div#content {
 	/* height: 100%;
   width: 100%; */
 
-  background-image: url("../images/left_bg.png"), url("../images/right_bg.png");
+  background-image: url("../images/left_bg_dup.png"), url("../images/right_bg_dup.png");
   background-position-x: -100px, calc(100vw - 120px);
-  background-repeat: no-repeat, no-repeat;
+  background-repeat: repeat-y;
   background-size: 200px;
 }
 
@@ -198,8 +198,8 @@ div#footer {
   font-size: 20pt;
   /* background-color: rgba(255,255,255,0.5); */
   background-color: black;
-  border-top: 2px solid darkgrey;
-  border-bottom: 2px solid darkgrey;
+  /* border-top: 2px solid darkgrey; */
+  /* border-bottom: 2px solid darkgrey; */
   z-index: 1;
   width: 100%;
 }
@@ -236,30 +236,65 @@ div#body .headline span {
   text-align: center;
 }
 
-div#body .introduction {
+div#body .section {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 20px;
   flex-direction: column;
+  margin-bottom: 30px;
   /* border: 4px solid black;
   background-color: #eee; */
   /* margin: 20px 0; */
 }
 
-div#body .introduction img {
+div#body .section .image {
+  text-align: center;
+}
+
+/* div#body .section .image .image-citation {
+  display: none;
+  position: absolute;
+  margin-top: -15px;
+  right: 3px;
+  font-size: 0.7em;
+} */
+
+div#body .section .text {
+  margin-bottom: 50px;
+  padding: 30px;
+  background-color: #eee;
+  /* border: 2px solid #555; */
+  text-align: justify;
+}
+
+div#body .divider {
+  width: 100%;
+  border-top: 2px solid black;
+  margin: 10px 0 40px 0;
+}
+
+div#body .section.introduction .text {
+  margin-top: 50px;
+  margin-bottom: 0;
+}
+
+div#body .section.introduction img {
   /* width: 100%; */
   width: 300px;
   /* border: 2px solid black; */
-  border-radius: 5px;
+  /* border-radius: 5px; */
 }
 
-div#body .introduction .text {
-  margin-top: 50px;
-  padding: 15px;
-  background-color: #eee;
-  border: 2px solid #555;
-  text-align: justify;
+div#body .section .text .title {
+  font-family: 'Montserrat';
+  font-size: 1.4em;
+  text-align: center;
+  padding-bottom: 7px;
+}
+
+div#body .section img {
+  max-width: 90%;
 }
 
 @media (min-width: 800px) {
@@ -305,12 +340,14 @@ div#body .introduction .text {
     content: "\0014\2014\0014"
   }
 
-  div#body .introduction {
-    flex-direction: row;
+  div#body .section {
+    max-width: 70%;
   }
-  div#body .introduction div.text {
-    margin-top: 0;
-    margin-left: 50px;
+
+  div#body .section img {
+    width: auto !important;
+    max-width: none;
+    height: 400px;
   }
 
 }
@@ -325,6 +362,60 @@ div#body .introduction .text {
   div#header {
     width: 900px;
     padding: 15px calc(calc(100% - 900px) / 2);
+  }
+
+  div#body .divider {
+    border: none;
+  }
+
+  div#body .introduction {
+    flex-direction: row;
+    align-items: stretch;
+    max-width: none;
+  }
+  div#body .section.introduction .text {
+    margin-top: 0;
+    margin-left: 50px;
+    display: flex;
+    align-items: center;
+  }
+
+}
+
+@media (min-width: 1400px) {
+
+  div#body {
+    max-width: 1200px;
+  }
+
+  div#body .section {
+    flex-direction: row;
+    align-items: stretch;
+    max-width: none;
+  }
+
+  div#body .section div.text {
+    margin-top: 0;
+    margin-bottom: 0;
+    margin-left: 50px;
+    display: flex;
+    align-items: center;
+  }
+
+  div#body .section img {
+    max-width: none;
+    height: 375px;
+  }
+
+  div#body .research .image, div#body .hobbies .image {
+    order: 2;
+  }
+  div#body .research div.text, div#body .hobbies div.text {
+    margin-left: 0;
+    margin-right: 50px;
+  }
+  div#body .photography .image {
+    order: -1;
   }
 
 }
