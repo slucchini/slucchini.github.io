@@ -22,10 +22,10 @@ div#content {
 	/* height: 100%;
   width: 100%; */
 
-  background-image: url("../images/left_bg_dup.png"), url("../images/right_bg_dup.png");
+  /* background-image: url("../images/left_bg_dup.png"), url("../images/right_bg_dup.png");
   background-position-x: -100px, calc(100vw - 120px);
   background-repeat: repeat-y;
-  background-size: 200px;
+  background-size: 200px; */
 }
 
 div#flex-flow {
@@ -44,7 +44,7 @@ div#header {
   /* width: 100%; */
   padding: 15px 19%;
   font-family: Montserrat;
-  z-index: 5;
+  /* z-index: 5; */
   text-align: center;
   display: flex;
   flex-flow: row wrap;
@@ -54,10 +54,24 @@ div#header {
   border-bottom: 7px solid black;
   /* BG created using https://cojdev.github.io/lowpoly/ with HSL colors:
     (199,100,70), (245,52,76), (22,85,52) */
-  background-image: url("../images/header_bg.png");
-  background-size: 915px;
+  /* background-image: url("../images/header_bg.png");
+  background-size: 915px; */
 
-  max-height: 255px;
+  /* background-image: url("../images/nature_cover.jpg");
+  background-size: cover; */
+
+  background-color: #FFFFFF;
+  background-image: linear-gradient(rgba(255,255,255,0) 50%, rgba(255,255,255,1) 100%), url("../images/nature_cover_small.jpg");
+  background-repeat: no-repeat;
+  background-size: 900px;
+  background-position-x: center;
+
+  padding-bottom: 300px;
+  margin-bottom: -280px;
+  border-bottom: 0;
+
+  /* max-height: 255px; */
+  z-index: 0;
   -webkit-transition: .2s ease-in-out;
   -moz-transition: .2s ease-in-out;
   -o-transition: .2s ease-in-out;
@@ -65,20 +79,43 @@ div#header {
   overflow: hidden;
 }
 
-div#header.open {
+/* div#header.open {
   max-height: 500px;
-}
+} */
 
 div#header a.break1, div#header a.break2 {
   flex-basis: 100%;
   height: 0;
 }
 
-div#header>a {
+div#header a {
   flex-grow: 1;
   flex-basis: 0;
   padding-bottom: 10px;
   position: relative;
+}
+
+div#header a:hover {
+  color: white !important
+}
+
+div#nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  flex-flow: row wrap;
+  max-height: 0px;
+
+  -webkit-transition: .2s ease-in-out;
+  -moz-transition: .2s ease-in-out;
+  -o-transition: .2s ease-in-out;
+  transition: .2s ease-in-out;
+  overflow: hidden;
+}
+
+div#nav.open {
+  max-height: 500px;
 }
 
 /* div#header .link {
@@ -220,7 +257,7 @@ div#body {
   flex-direction: column;
   /* margin-top: 250px; */
   max-width: 900px;
-  padding: 0 10%;
+  padding: 0 5%;
 }
 
 div#body .headline {
@@ -240,7 +277,7 @@ div#body .section {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px;
+  padding: 10px;
   flex-direction: column;
   margin-bottom: 30px;
   /* border: 4px solid black;
@@ -303,29 +340,40 @@ div#body .section img {
     text-align: center;
     display: flex;
     align-items: center;
-    flex-flow: row;
+    /* flex-flow: row; */
     width: 100%;
     padding: 15px 0;
     background-size: cover;
+    background-position: center;
+
+    padding-bottom: 500px;
+    margin-bottom: -480px;
+    z-index: 0;
+    border-bottom: 0;
   }
 
-  div#header a.break1, div#header a.break2, div#header #nav-icon1 {
+  /* div#header a.break1, div#header a.break2, div#header #nav-icon1 { */
+  div#header a.break2, div#header #nav-icon1 {
     display: none;
     flex-basis: 0;
     height: 0;
   }
 
   div#header a.research, div#header a.photography {
-    order: -1;
+    /* order: -1; */
   }
 
-  div#header>a {
+  div#header a {
     flex-grow: 1;
   }
 
   div#header a.home {
     max-width: 200px;
     padding: 0 40px;
+  }
+
+  div#nav {
+    max-height: 500px;
   }
 
   div#body {
@@ -342,6 +390,7 @@ div#body .section img {
 
   div#body .section {
     max-width: 70%;
+    padding: 20px;
   }
 
   div#body .section img {
@@ -362,6 +411,8 @@ div#body .section img {
   div#header {
     width: 900px;
     padding: 15px calc(calc(100% - 900px) / 2);
+    padding-bottom: 500px;
+    margin-bottom: -450px;
   }
 
   div#body .divider {
@@ -383,6 +434,10 @@ div#body .section img {
 }
 
 @media (min-width: 1400px) {
+
+  div#header {
+    background-position-y: 0px, -200px;
+  }
 
   div#body {
     max-width: 1200px;
