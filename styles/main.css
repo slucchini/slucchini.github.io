@@ -334,6 +334,21 @@ div#body .section img {
   max-width: 90%;
 }
 
+/* div#body .movie .image img, div#body .figure .image img {
+  max-width: 100%;
+} */
+
+div#body .section.figures .figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+div#body .caption {
+  font-size: 0.8em;
+  text-align: justify;
+}
+
 @media (min-width: 800px) {
 
   div#header {
@@ -397,6 +412,20 @@ div#body .section img {
     width: auto !important;
     max-width: none;
     height: 400px;
+  }
+
+  div#body .section.movie *, div#body .section.figures img {
+    max-width: 90%;
+    height: auto;
+  }
+
+  div#body .movie #zea_movie {
+    width: 600px;
+    height: 300px;
+  }
+  div#body .movie #new_orbits_movie {
+    width: 600px;
+    height: 200px;
   }
 
 }
@@ -471,6 +500,43 @@ div#body .section img {
   }
   div#body .photography .image {
     order: -1;
+  }
+
+  div#body .movie {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+  }
+
+  div#body .movie .image * {
+    max-width: 600px;
+  }
+
+  div#body .movie #zea_movie {
+    width: 600px;
+    height: 335px;
+  }
+  div#body .movie #new_orbits_movie {
+    width: 600px;
+    height: 226.33px;
+  }
+
+  div#body .movie .caption {
+    padding-left: 20px;
+  }
+
+  div#body .section.figures {
+    max-width: 100%;
+  }
+  div#body .section.figures .figure {
+    padding: 0 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  div#body .section.figures .figure img {
+    height: auto;
+    max-width: 100%;
   }
 
 }
