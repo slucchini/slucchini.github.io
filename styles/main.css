@@ -1,6 +1,7 @@
 body {
     /* background-color: black; */
     margin: 0;
+    overscroll-behavior-y: none;
 }
 html, body {
 	height: 100%;
@@ -132,13 +133,28 @@ div#header .link.hidden {
 } */
 
 div#header a.home {
-  max-width: 200px;
-  padding: 0 40px 20px 40px;
+  width: 200px;
+  height: 200px;
   flex-basis: auto;
+  position: relative;
 }
 
 div#header a.home img {
-  width: 100%;
+  width: 200px;
+  padding: 0 40px 20px 40px;
+  position:absolute;
+  left:0;
+  -webkit-transition: opacity .2s ease-in-out;
+  -moz-transition: opacity .2s ease-in-out;
+  -o-transition: opacity .2s ease-in-out;
+  transition: opacity .2s ease-in-out;
+}
+
+div#header a.home img.top {
+  opacity: 0;
+}
+div#header a.home img.top:hover {
+  opacity: 1;
 }
 
 div#header .icon {
@@ -305,6 +321,19 @@ div#body .section .text {
   text-align: justify;
 }
 
+div#body .section .text a {
+  color: #858585;
+}
+div#body .section .text a:hover {
+  color: black !important;
+}
+div#body .section .text .title a {
+  color: black;
+}
+div#body .section .text .title a:hover {
+  color: #858585 !important;
+}
+
 div#body .divider {
   width: 100%;
   border-top: 2px solid black;
@@ -455,9 +484,14 @@ div#body .caption {
   }
   div#body .section.introduction .text {
     margin-top: 0;
-    margin-left: 50px;
     display: flex;
     align-items: center;
+  }
+  div#body .section.introduction.left div.text {
+    margin-left: 50px;
+  }
+  div#body .section.introduction.right div.text {
+    margin-right: 50px;
   }
 
 }
@@ -481,7 +515,7 @@ div#body .caption {
   div#body .section div.text {
     margin-top: 0;
     margin-bottom: 0;
-    margin-left: 50px;
+    margin-left: 0;
     display: flex;
     align-items: center;
   }
@@ -491,14 +525,16 @@ div#body .caption {
     height: 375px;
   }
 
-  div#body .research .image, div#body .hobbies .image {
-    order: 2;
-  }
-  div#body .research div.text, div#body .hobbies div.text {
-    margin-left: 0;
+  div#body .section.right div.text {
     margin-right: 50px;
   }
-  div#body .photography .image {
+  div#body .section.left div.text {
+    margin-left: 50px;
+  }
+  div#body .section.right .image {
+    order: 2;
+  }
+  div#body .section.left .image {
     order: -1;
   }
 
