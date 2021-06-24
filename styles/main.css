@@ -247,7 +247,7 @@ div#footer {
   bottom: 0;
   width: 100%;
   text-align: center;
-  padding: 15px 0;
+  padding: 20px 0;
   font-size: 20pt;
   /* background-color: rgba(255,255,255,0.5); */
   background-color: black;
@@ -259,7 +259,7 @@ div#footer {
 
 div#footer a {
 	color: white;
-  padding: 20px;
+  padding: 0 20px;
 }
 
 /* Body Elements */
