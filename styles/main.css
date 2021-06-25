@@ -457,15 +457,6 @@ div#body .caption {
     height: auto;
   }
 
-  div#body .movie #zea_movie {
-    width: 600px;
-    height: 300px;
-  }
-  div#body .movie #new_orbits_movie {
-    width: 600px;
-    height: 200px;
-  }
-
 }
 
 @media (min-width: 900px) {
@@ -557,6 +548,9 @@ div#body .caption {
     max-width: 600px;
   }
 
+  div#body .section .image video {
+    max-width: none;
+  }
   div#body .movie #zea_movie {
     width: 600px;
     height: 335px;
