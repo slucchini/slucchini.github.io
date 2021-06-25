@@ -62,7 +62,7 @@ div#header {
   background-size: cover; */
 
   background-color: #FFFFFF;
-  background-image: linear-gradient(rgba(255,255,255,0) 50%, rgba(255,255,255,1) 100%), url("../images/nature_cover_small.jpg");
+  background-image: linear-gradient(rgba(255,255,255,0) 290px, rgba(255,255,255,1) 580px), url("../images/nature_cover_small.jpg");
   background-repeat: no-repeat;
   background-size: 900px;
   background-position-x: center;
@@ -142,8 +142,8 @@ div#header a.home {
 div#header a.home img {
   width: 200px;
   padding: 0 40px 20px 40px;
-  position:absolute;
-  left:0;
+  /* position:absolute;
+  left:0; */
   -webkit-transition: opacity .2s ease-in-out;
   -moz-transition: opacity .2s ease-in-out;
   -o-transition: opacity .2s ease-in-out;
@@ -152,6 +152,8 @@ div#header a.home img {
 
 div#header a.home img.top {
   opacity: 0;
+  position: relative;
+  top: -216.45px;
 }
 div#header a.home img.top:hover {
   opacity: 1;
@@ -303,6 +305,11 @@ div#body .section {
 
 div#body .section .image {
   text-align: center;
+  max-width: 100%;
+}
+
+div#body .section .image video {
+  max-width: 100%;
 }
 
 /* div#body .section .image .image-citation {
@@ -389,6 +396,8 @@ div#body .caption {
     padding: 15px 0;
     background-size: cover;
     background-position: center;
+
+    background-image: linear-gradient(rgba(255,255,255,0) 50%, rgba(255,255,255,1) 100%), url("../images/nature_cover_small.jpg");
 
     padding-bottom: 500px;
     margin-bottom: -480px;
