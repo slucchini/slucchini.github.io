@@ -1,2 +1,2 @@
-# slucchini.github.io
-Personal website
+# Personal website
+Currently published at https://www.scottlucchini.com.
