@@ -11,8 +11,8 @@ html, body {
 a {
     color: black;
     text-decoration: none;
-    -webkit-transition: color 0.2s ease-out;
-    transition: color 0.2s ease-out;
+    -webkit-transition: 0.2s ease-out;
+    transition: 0.2s ease-out;
     cursor: pointer;
 }
 a:hover {
@@ -385,6 +385,60 @@ div#body .caption {
   text-align: justify;
 }
 
+div#body .content.hidden {
+  display: none;
+}
+
+div#body .buttons {
+  margin: 20px 0;
+  position: relative;
+}
+
+div#body .buttons>a {
+  position: relative;
+  display: inline;
+  border: 1px solid black;
+  padding: 10px;
+  margin: 10px;
+  border-radius: 5px;
+  background-color: #858585;
+  color: white;
+}
+div#body .buttons>a:hover {
+  color: black !important;
+  background-color: white;
+}
+
+/* div#body .buttons>a:before {
+  content: " ";
+  padding: 0px;
+  position: absolute;
+  z-index: -1;
+  top: 5px;
+  left: 5px;
+  right: 5px;
+  border-bottom: 2px solid black;
+} */
+
+div#body .buttons>a.active {
+  color: black !important;
+  background-color: white;
+}
+
+/* div#body .buttons>a.active:before {
+  content: " ";
+  padding: 22px;
+} */
+
+div#body .buttons>.underliner {
+  -webkit-transition: 0.5s ease-out;
+  transition: 0.5s ease-out;
+  position: absolute;
+  width: 140px;
+  border-bottom: 2px solid black;
+  top: 40px;
+}
+
 @media (min-width: 800px) {
 
   div#header {
@@ -474,7 +528,8 @@ div#body .caption {
   }
 
   div#body .divider {
-    border: none;
+    /* border: none; */
+    display: none;
   }
 
   div#body .introduction {
