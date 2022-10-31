@@ -5,13 +5,25 @@ $(document).ready(function(){
 	});
 
 	$('.buttons>a').click(function(){
+		console.log($(this))
 		$('.buttons>a').each(function(){
 			$(this).removeClass('active')
 		});
+		if ($(this)[0].classList.length >= 1) {
+			// window.location.href = window.location.href + '#'+$(this)[0].classList[0];
+			window.location.hash = '#'+$(this)[0].classList[0];
+		}
 		$(this).toggleClass('active');
 		showResearch(this)
 	})
-	showResearch($('.buttons>a.active'))
+	
+	if (window.location.pathname.endsWith("research")) {
+		if (window.location.hash == '') {
+			showResearch($('.buttons>a.active'))
+		} else {
+			$('.buttons>a.'+window.location.hash.substring(1)).click()
+		}
+	}
 });
 
 function showResearch(activeButton) {

@@ -580,6 +580,10 @@ div#body .buttons>.underliner {
     height: 375px;
   }
 
+  div#body .section .wtimage img {
+    height: 300px;
+  }
+
   div#body .section.right div.text {
     margin-right: 50px;
   }
@@ -613,6 +617,10 @@ div#body .buttons>.underliner {
   div#body .movie #new_orbits_movie {
     width: 600px;
     height: 226.33px;
+  }
+  div#body .movie #gaia_movie {
+    width: 600px;
+    height: 321px;
   }
 
   div#body .movie .caption {

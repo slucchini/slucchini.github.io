@@ -46,11 +46,11 @@
 						</div>
 					</div>
 					<div class="divider"><!-- --></div>
-					<!-- <div class="buttons">
+					<div class="buttons">
 						<a class="magellanic active">Magellanic Corona</a>
 						<a class="gaia">Gaia Moving Groups</a>
 						<div class="underliner"><!-/- -/-></div>
-					</div> -->
+					</div>
 					<div class="content magellanic section right">
 						<div class="text">
 							<div>
@@ -115,16 +115,37 @@
 							<b>The orbital history of the Magellanic Clouds.</b> The left panel shows the evolution of the Magellanic Stream in cartesian coordinates with the MW disk centered at the origin and denoted by the gray shaded oval (the sun is located at (x,y,z) = (-8.3,0,0.027) kpc). The solid and dashed lines represent the past orbital trajectories of the LMC and SMC respectively. The color of the gas represents plane-projected density on an arbitrary scale with higher densities represented as lighter colors. The top right panel shows the distance between the center of masses of the LMC and SMC in kpc as they orbit around each other and fall in towards the MW. Their initial state is on the left side of the plot at t = -3.4 Gyrs and it progresses towards present day on the right (t = 0). The bottom right panel shows the Galactocentric distance of the Magellanic Clouds in kpc where the solid and dashed lines represent the LMC and SMC respectively.
 						</div>
 					</div>
-					<!-- <div class="content gaia section left">
+					<div class="content gaia section left">
 						<div class="text">
 							<div>
-								This is a test!
+								I have also been working with two undergraduates at UW - Madison on the detection and characterization of stellar moving groups in the Milky Way. We have developed a new, open-source Wavelet Transformtion code, MGwave (soon to be available on GitHub) to analyze <em>Gaia</em> data. Selecting stars near the Sun, we use MWwave to identify substructures in velocity space. The figure shows the histogram of stars in azimuthal velocity vs radial velocity space (in Galactocentric coordinates), and its corresponding wavelet transformed image in which purple (green) regions denote over (under) densities and the red (blue) crosses show the locations of the maxima (minima). Using the third data release from <em>Gaia</em>, we detected three new moving groups (circled) and three additional groups previously not seen in <em>Gaia</em> data (squares). This work has been submitted to MNRAS:<br>
+								Lucchini, S., Pellett, E., D'Onghia, E., & Aguerri, J. A. L. MNRAS, submitted. (2022) <a href="https://arxiv.org/abs/2206.10633">arXiv:2206.10633</a>
+							</div>
+						</div>
+						<div class="image wtimage">
+							<img src="images/wavelet/WT_image.png"/>
+						</div>
+					</div>
+					<div class="content gaia section right">
+						<div class="text">
+							<div>
+								With the third data release from <em>Gaia</em>, we now have over 30 million stars with full 3D position and 3D velocity data. This allows us to explore the kinematic structure of the Milky Way throughout the disk. In the image, we're showing the locations of the maxima in the wavelet image as we progress through Galactocentric radius. The points are colored by their radius value and you can see that many of the structures that we see in the solar neighborhood (shown as squares) are connected throughout the rest of the disk. This indicates that these moving groups are large-scale structures likely formed through gravitational effects instead of local, transient features. The properties of these extended moving groups can then tell us about the gravitational potential and non-axisymmetric features of the Milky Way.
 							</div>
 						</div>
 						<div class="image">
-							<img src="images/Nature_paper/nature_cover.png"/>
+							<img src="images/wavelet/worms.png"/>
 						</div>
-					</div> -->
+					</div>
+					<div class="content gaia section movie">
+						<div class="image">
+							<video id="gaia_movie" controls>
+							  <source src="./videos/gaia_movie.mp4" type="video/mp4">
+							</video>
+						</div>
+						<div class="caption">
+							<b>Moving groups through Galactocentric radius.</b> The left panel shows the histogram of stars in velocity space (azimuthal velocity vs radial velocity), and the right panel shows the wavelet transformed image in which purple (green) regions denote over (under) densities and the red (blue) crosses show the locations of the maxima (minima). The radial value is shown in the top of the left panel. You can see many of the groups continuously move from one frame to the next indicating that they are coherent structures across the Milky Way disk.
+						</div>
+					</div>
 				</div>
 
 				<div id="footer">
