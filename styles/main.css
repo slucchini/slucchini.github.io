@@ -492,7 +492,7 @@ div#body .buttons>.underliner {
     text-align: left;
   }
   div#body .headline span.not-last::after {
-    content: "\0014\2014\0014"
+    content: "\0020\2014\0020"
   }
 
   div#body .section {
