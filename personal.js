@@ -4,27 +4,73 @@ $(document).ready(function(){
 		$('#nav').toggleClass('open');
 	});
 
+	$('#nav-icon2').click(function(){
+		$(this).toggleClass('open');
+		$('.paper-nav').toggleClass('open');
+	})
+
 	$('.buttons>a').click(function(){
-		console.log($(this))
+		// console.log($(this))
 		$('.buttons>a').each(function(){
 			$(this).removeClass('active')
 		});
 		if ($(this)[0].classList.length >= 1) {
 			// window.location.href = window.location.href + '#'+$(this)[0].classList[0];
-			window.location.hash = '#'+$(this)[0].classList[0];
+			// window.location.search = '?'+$(this)[0].classList[0];
+			if (history.pushState) {
+				var newurl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?' + $(this)[0].classList[0];
+				window.history.pushState({path:newurl},'',newurl);
+			}
 		}
 		$(this).toggleClass('active');
+		window.location.hash = '';
 		showResearch(this)
+		updatePaperNav();
 	})
 	
 	if (window.location.pathname.endsWith("research")) {
-		if (window.location.hash == '') {
+		if (window.location.search == '') {
 			showResearch($('.buttons>a.active'))
 		} else {
-			$('.buttons>a.'+window.location.hash.substring(1)).click()
+			$('.buttons>a.'+window.location.search.substring(1)).click()
 		}
+
+		$(window).scroll(function () {
+			if($(window).scrollTop() > ($('.buttons').offset().top-window.innerHeight/2.)) {
+				updatePaperNav();
+			} else {
+				// $('.paper-nav').css('position', '');
+				$('.paper-nav').css('left', '-100%');
+				$('.paper-nav').removeClass('open');
+				$('#nav-icon2').removeClass('open');
+			}
+		  });
 	}
 });
+
+function updatePaperNav() {
+	if (window.matchMedia('(min-width: 800px)').matches) {
+		$('.paper-nav').css('left',0);
+		return;
+	}
+	if (window.location.search == '') {
+		research = 'magellanic';
+	} else {
+		research = window.location.search.substring(1);
+	}
+
+	switch (research) {
+		case 'magellanic':
+			navLeft = '-110px';
+			break;
+		case 'gaia':
+			navLeft = '-130px';
+			break;
+		default:
+			navLeft = '0px';
+	}
+	$('.paper-nav').css('left',navLeft);
+}
 
 function showResearch(activeButton) {
 	var activeClass = ''
