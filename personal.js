@@ -55,8 +55,10 @@ function updatePaperNav() {
 		research = window.location.search.substring(1);
 	}
 	if ($('.paper-nav-content-container>.content.'+research).length == 0) {
-		$('.paper-nav').css('left','-250px');
+		$('.paper-nav').css('display','none');
 		return;
+	} else {
+		$('.paper-nav').css('display','block');
 	}
 
 	if (window.matchMedia('(min-width: 800px)').matches) {
