@@ -40,7 +40,7 @@ $(document).ready(function(){
 				updatePaperNav();
 			} else {
 				// $('.paper-nav').css('position', '');
-				$('.paper-nav').css('left', '-100%');
+				$('.paper-nav').css('left', '-250px');
 				$('.paper-nav').removeClass('open');
 				$('#nav-icon2').removeClass('open');
 			}
@@ -49,16 +49,22 @@ $(document).ready(function(){
 });
 
 function updatePaperNav() {
-	if (window.matchMedia('(min-width: 800px)').matches) {
-		$('.paper-nav').css('left',0);
-		return;
-	}
 	if (window.location.search == '') {
 		research = 'magellanic';
 	} else {
 		research = window.location.search.substring(1);
 	}
+	if ($('.paper-nav-content-container>.content.'+research).length == 0) {
+		$('.paper-nav').css('left','-250px');
+		return;
+	}
 
+	if (window.matchMedia('(min-width: 800px)').matches) {
+		$('.paper-nav').css('left',0);
+		return;
+	}
+
+	console.log(research);
 	switch (research) {
 		case 'magellanic':
 			navLeft = '-110px';
@@ -67,7 +73,7 @@ function updatePaperNav() {
 			navLeft = '-130px';
 			break;
 		default:
-			navLeft = '0px';
+			navLeft = '-250px';
 	}
 	$('.paper-nav').css('left',navLeft);
 }
