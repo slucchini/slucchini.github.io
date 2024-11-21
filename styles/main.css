@@ -445,6 +445,10 @@ div#body .section.introduction img {
   /* border-radius: 5px; */
 }
 
+div#body #review.section {
+  margin-top: -40px;
+}
+
 div#body .section .text .title {
   font-family: 'Montserrat';
   font-size: 1.4em;
