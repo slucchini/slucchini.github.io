@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>ENGAWA</title>
+
+    <style>
+      body {
+        margin: 0;
+        padding: 24px 16px;
+        background: #fff;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        margin-top: 150px;
+      }
+
+      .app {
+        /* width: min(1100px, 100%); */
+        width: 100%;
+      }
+
+      .controls {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 14px;
+        flex-wrap: wrap;
+      }
+
+      .controls button {
+        appearance: none;
+        border: 1px solid rgba(0, 0, 0, 0.22);
+        background: rgba(0, 0, 0, 0.03);
+        color: #111;
+        padding: 10px 14px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+      }
+
+      .controls button:hover {
+        border-color: rgba(0, 0, 0, 0.35);
+        background: rgba(0, 0, 0, 0.06);
+      }
+
+      .controls button.active {
+        border-color: rgba(0, 0, 0, 0.65);
+        background: rgba(0, 0, 0, 0.12);
+      }
+
+      /* Grid (white dividers) */
+      .grid {
+        --split: 50%;  /* 0% => all high, 100% => all low */
+        --gap: 6px;
+
+        background: #fff;
+        padding: var(--gap);
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: var(--gap);
+        box-sizing: border-box;
+      }
+
+      .panel {
+        position: relative;
+        aspect-ratio: 1 / 1;
+        overflow: hidden;
+        background: #000;
+        user-select: none;
+      }
+
+      .panel img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        pointer-events: none;
+        -webkit-user-drag: none;
+        user-select: none;
+      }
+
+      .panel img.high {
+        clip-path: inset(0 0 0 var(--split));
+      }
+
+      /* Column label */
+      .label {
+        position: absolute;
+        top: 4%;
+        left: 4%;
+        color: #fff;
+        font-weight: 300;
+        font-size: clamp(11px, 1.6vw, 22px);
+        line-height: 1;
+        /* text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75); */
+        pointer-events: none;
+        z-index: 5; /* above images + divider */
+        white-space: nowrap;
+      }
+
+      /* Draggable vertical divider:
+         hit area remains wide, visible line is 1px */
+      .divider {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: var(--split);
+        width: 28px;            /* hit area */
+        transform: translateX(-50%);
+        cursor: ew-resize;
+        touch-action: none;
+        z-index: 4;
+      }
+
+      .divider::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 50%;
+        width: 1px;             /* <-- 1 px thick visible line */
+        transform: translateX(-50%);
+        background: rgba(255, 255, 255, 0.95);
+      }
+
+      @media (max-width: 1000px) {
+        .grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="app">
+      <div id="controls" class="controls"></div>
+      <div id="grid" class="grid"></div>
+    </div>
+
+    <script>
+      // PNGs are in ./figures/
+      const IMG_DIR = "figures/";
+
+      const COLS = 4;
+
+      const ROWS = [
+        { label: "Au6",   row: 0 },
+        { label: "TNG-A", row: 1 },
+        { label: "Au8",   row: 2 },
+        { label: "TNG-B", row: 3 },
+      ];
+
+      // Column labels, left-to-right
+      const COL_LABELS = ["Total gas", "H I", "Mg II", "O VI"];
+
+      const grid = document.getElementById("grid");
+      const controls = document.getElementById("controls");
+
+      function filename(row, col, which /* "low" | "high" */) {
+        return `${IMG_DIR}sim${row}_element${col}_${which}.png`;
+      }
+
+      // Create 4 panels once; on row switch we swap sources.
+      const panels = [];
+
+      function makePanel(col) {
+        const panel = document.createElement("div");
+        panel.className = "panel";
+        panel.dataset.col = String(col);
+
+        panel.innerHTML = `
+          <img class="low"  alt="" loading="lazy" draggable="false">
+          <img class="high" alt="" loading="lazy" draggable="false">
+          <div class="label">${COL_LABELS[col] ?? ""}</div>
+          <div class="divider" role="slider" tabindex="0"
+               aria-label="Split position"
+               aria-valuemin="0" aria-valuemax="100"></div>
+        `;
+        return panel;
+      }
+
+      for (let c = 0; c < COLS; c++) {
+        const p = makePanel(c);
+        panels.push(p);
+        grid.appendChild(p);
+      }
+
+      function setRow(rowIndex) {
+        for (const panel of panels) {
+          const col = Number(panel.dataset.col);
+          panel.querySelector("img.low").src = filename(rowIndex, col, "low");
+          panel.querySelector("img.high").src = filename(rowIndex, col, "high");
+        }
+      }
+
+      // Buttons
+      let currentRow = ROWS[0].row;
+
+      function setActiveButton(rowValue) {
+        [...controls.querySelectorAll("button")].forEach((btn) => {
+          const isActive = Number(btn.dataset.row) === rowValue;
+          btn.classList.toggle("active", isActive);
+          btn.setAttribute("aria-pressed", isActive ? "true" : "false");
+        });
+      }
+
+      ROWS.forEach(({ label, row }) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = label;
+        btn.dataset.row = String(row);
+        btn.setAttribute("aria-pressed", "false");
+        btn.addEventListener("click", () => {
+          currentRow = row;
+          setRow(currentRow);
+          setActiveButton(currentRow);
+        });
+        controls.appendChild(btn);
+      });
+
+      // ---- Synced drag logic ----
+      let dragging = false;
+      let activeRect = null;
+
+      const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+
+      function setSplit(pct) {
+        const p = clamp(pct, 0, 100);
+        grid.style.setProperty("--split", p + "%");
+        grid.querySelectorAll(".divider").forEach((d) => {
+          d.setAttribute("aria-valuenow", String(Math.round(p)));
+        });
+      }
+
+      function percentFromClientX(clientX) {
+        if (!activeRect) return 50;
+        return ((clientX - activeRect.left) / activeRect.width) * 100;
+      }
+
+      function onPointerDown(e) {
+        dragging = true;
+        activeRect = e.currentTarget.closest(".panel").getBoundingClientRect();
+        e.currentTarget.setPointerCapture?.(e.pointerId);
+        setSplit(percentFromClientX(e.clientX));
+        e.preventDefault();
+      }
+
+      function onPointerMove(e) {
+        if (!dragging) return;
+        setSplit(percentFromClientX(e.clientX));
+      }
+
+      function endDrag() {
+        dragging = false;
+        activeRect = null;
+      }
+
+      grid.querySelectorAll(".divider").forEach((divider) => {
+        divider.addEventListener("pointerdown", onPointerDown);
+        divider.addEventListener("pointermove", onPointerMove);
+        divider.addEventListener("pointerup", endDrag);
+        divider.addEventListener("pointercancel", endDrag);
+        divider.addEventListener("lostpointercapture", endDrag);
+
+        divider.addEventListener("keydown", (e) => {
+          const cur = parseFloat(getComputedStyle(grid).getPropertyValue("--split"));
+          if (Number.isNaN(cur)) return;
+
+          if (e.key === "ArrowLeft")  { setSplit(cur - 1); e.preventDefault(); }
+          if (e.key === "ArrowRight") { setSplit(cur + 1); e.preventDefault(); }
+          if (e.key === "Home")       { setSplit(0); e.preventDefault(); }
+          if (e.key === "End")        { setSplit(100); e.preventDefault(); }
+        });
+      });
+
+      // Init
+      setRow(currentRow);
+      setActiveButton(currentRow);
+      setSplit(50);
+    </script>
+  </body>
+</html>

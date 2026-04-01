@@ -57,7 +57,8 @@
 
 					<div class="divider"><!-- --></div>
 					<div class="buttons">
-						<a class="magellanic active">Magellanic Corona</a>
+						<a class="engawa active">ENGAWA</a>
+						<a class="magellanic">Magellanic Corona</a>
 						<a class="cgm">Circumgalactic Medium</a>
 						<a class="gaia">Gaia Moving Groups</a>
 						<div class="underliner"><!-/- -/-></div>
@@ -68,6 +69,9 @@
 							<span></span>
 						</div>
 						<div class="paper-nav-content-container">
+							<div class="content engawa">
+								<a href="#arxiv2603.05584">arXiv:2603.05584</a>
+							</div>
 							<div class="content cgm">
 								<a href="#apj24b"><i>ApJ</i> (2024b)<br/>
 								<a href="#apj25"><i>ApJ</i> (2025)</a>
@@ -84,6 +88,46 @@
 							</div>
 						</div>
 					</div>
+
+
+<!--  -->
+<!-- ENGAWA Section -->
+<!--  -->
+
+					<div id="engawa" class="content engawa section left">
+						<div class="text">
+							<div>
+								Current cosmological simulations are designed to focus their computational power on the regions of high density and star formation -- the galaxies themselves. This is done through the use of mass-based refinement schemes. These methods aim to keep the mass of each gas cell approximately constant. However, this means that low-density regions, like the circumgalactic medium, are poorly resolved. There have been several previous iterations of "CGM-refinement" simulations which are explicitly designed to better resolve galactic atmospheres, but with cutting edge computational resources and techniques, we can now get down to resolutions not seen before. In the ENGAWA (ENhanced Galactic Atmospheres With Arepo) simulations, we have fixed spatial refinement down to 200 pc throughout the CGM. These simulations are run with Arepo and combine Lagrangian mass-refinement with a minimum gas cell volume around our galaxies that is only possible with this hybrid Voronoi mesh code.<br/>
+								Lucchini, S., Abramson, C., Hummels, C., Conroy, C., Hernquist, L., & Smith, A. <i>submitted</i>. (2026) <a href="https://arxiv.org/abs/2603.05584">arXiv:2603.05584</a>
+							</div>
+						</div>
+						<div class="image">
+							<img src="images/papers/engawa1/cgm_proj.png"/>
+						</div>
+					</div>
+					<div class="content engawa section right">
+						<div class="text">
+							<div>
+								As we increase the resolution in the CGM, we find a dramatic increase in the cool gas column densities as a function of radius. On the other hand, we do not see an appreciable increase in the total cool gas mass. The plot to the right shows the median H I column density as a function of impact parameter for the default mass refinement simulation and the highest resolution (200 pc) volume refinement simulation. The black points are the observational values from the COS-Halos survey (Tumlinson, et al. 2013). Furthermore, the thin lines denote the profiles considering just the metagalactic UV background, while the thick lines calculate the photoionization equilibrium ion fractions with additional radiation from stellar sources (using COLT post-processing). With smaller cell sizes, we are able to resolve more small-scale features which have higher densities and covering fractions. However, the stellar radiation mitigates this increase for the H I, bringing the simulation column densities into better alignment with the COS-Halos data.
+							</div>
+						</div>
+						<div class="image">
+							<img src="images/papers/engawa1/coldens_colt.png"/>
+						</div>
+					</div>
+					<div class="content engawa section figures">
+						<div class="figure">
+							<a href="engawa-image/image.html">
+							<div class="image">
+								<img src="engawa-image/screenshot.png"/>
+							</div>
+							</a>
+							<div class="caption">
+								We have zoom in simulations of four different Milky Way-like galaxies at resolutions down to 200 pc. Click on the image to explore an interactive figure showing the projections in more detail.
+							</div>
+						</div>
+					</div>
+
 
 <!--  -->
 <!-- CGM Section -->
@@ -165,7 +209,7 @@
 					<div id="nat20" class="content magellanic section right">
 						<div class="text">
 							<div>
-								The bulk of my work over the past few years has been in running N-body hydrodynamical simulations of the formation of the Magellanic Stream. These simulations have shown that a warm circumgalactic medium around the Large and Small Magellanic Clouds (LMC/SMC), the Magellanic Corona, is a key ingredient in being able to account for the high ionization fraction and total mass of the Stream. Previous works had not been able to explain the massive amount of ionized gas (~2 billion solar masses) which makes up the majority of the Stream's mass budget. Since the Magellanic Corona is expected to be around the virial temperature of the LMC (3&times;10<sup>5</sup> K for an LMC halo of 2&times;10<sup>11</sup> solar masses), this gas should be ionized. Therefore, as the Magellanic Clouds fall in towards the Milky Way, the Magellanic Corona is warped and stretched by the Milky Way's gravitational potential and its own hot circumgalactic gas. This work was published in September 2020 in Nature:<br>
+								The bulk of my work during my PhD was in running N-body hydrodynamical simulations of the formation of the Magellanic Stream. These simulations have shown that a warm circumgalactic medium around the Large and Small Magellanic Clouds (LMC/SMC), the Magellanic Corona, is a key ingredient in being able to account for the high ionization fraction and total mass of the Stream. Previous works had not been able to explain the massive amount of ionized gas (~2 billion solar masses) which makes up the majority of the Stream's mass budget. Since the Magellanic Corona is expected to be around the virial temperature of the LMC (3&times;10<sup>5</sup> K for an LMC halo of 2&times;10<sup>11</sup> solar masses), this gas should be ionized. Therefore, as the Magellanic Clouds fall in towards the Milky Way, the Magellanic Corona is warped and stretched by the Milky Way's gravitational potential and its own hot circumgalactic gas. This work was published in September 2020 in Nature:<br>
 								Lucchini, S., D'Onghia, E., Fox, A. J., et al. <i>Nature</i>, 585, 203. (2020) <a href="https://www.nature.com/articles/s41586-020-2663-4">10.1038/s41586-020-2663-4</a>, <a href="https://arxiv.org/abs/2009.04368">arXiv:2009.04368</a>
 							</div>
 						</div>
