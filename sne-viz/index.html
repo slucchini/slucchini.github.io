@@ -29,7 +29,7 @@
 <div class="row">
   <div class="panel">
     <canvas id="main" width="600" height="600"></canvas>
-    <div class="label">Main view (drag the pink rectangle)</div>
+    <div class="label">Main view (drag the white rectangle)</div>
   </div>
   <div class="panel zoom">
     <canvas id="zoom" width="520" height="520"></canvas>
@@ -38,7 +38,7 @@
 </div>
 <div class="controls">
   <button id="play">Play</button>
-  <label class="toggle"><input id="corotate" type="checkbox"> co-rotate inset</label>
+  <label class="toggle"><input id="corotate" type="checkbox" checked> co-rotate inset</label>
   <span id="frameLabel">020</span>
   <input id="frame" type="range" min="20" max="519" value="20" step="1">
 </div>
@@ -69,7 +69,7 @@
 
   let fmin = 20, fmax = 519;
   let frameIdx = fmin;
-  let rect = { x0: -5, y0: -5, x1: 5, y1: 5 };  // kpc
+  let rect = { x0: -14, y0: -5, x1: -10, y1: -1 };  // kpc
   // Flat per-frame data sliced via offsets: sneXs/Ys are float32, sneAges is uint8.
   // For frame f, rows are [offsets[f-fmin] .. offsets[f-fmin+1]).
   let sneXs = null, sneYs = null, sneAges = null, sneOffsets = null;
