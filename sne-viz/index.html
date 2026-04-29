@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>I11 gas + supernovae</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #111; color: #ddd;
+         margin: 0; padding: 16px; }
+  h1 { font-size: 18px; margin: 0 0 12px 0; }
+  .row { display: flex; flex-direction: row; gap: 16px; align-items: flex-start; }
+  .panel { background: #000; border: 1px solid #333; padding: 4px; border-radius: 4px; }
+  canvas#main { width: 600px; height: 600px; cursor: grab; display: block; }
+  canvas#zoom { width: 520px; height: 520px; display: block; }
+  .panel.zoom { width: 528px; }
+  .label { font-size: 12px; color: #888; padding: 4px 0 0 4px; }
+  .controls { margin-top: 16px; display: flex; gap: 16px; align-items: center; max-width: 1180px; }
+  #frame { flex: 1; }
+  button { background: #2a2a2a; color: #ddd; border: 1px solid #444; padding: 6px 12px;
+           border-radius: 3px; cursor: pointer; }
+  button:hover { background: #3a3a3a; }
+  #frameLabel { font-variant-numeric: tabular-nums; min-width: 60px; }
+  #status { font-size: 12px; color: #888; margin-top: 8px; }
+  .toggle { display: flex; align-items: center; gap: 6px; user-select: none; cursor: pointer; }
+  .toggle input { cursor: pointer; }
+</style>
+</head>
+<body>
+<h1>I11 gas column density + supernovae</h1>
+<div class="row">
+  <div class="panel">
+    <canvas id="main" width="600" height="600"></canvas>
+    <div class="label">Main view (drag the pink rectangle)</div>
+  </div>
+  <div class="panel zoom">
+    <canvas id="zoom" width="520" height="520"></canvas>
+    <div class="label" id="zoomLabel">Zoom</div>
+  </div>
+</div>
+<div class="controls">
+  <button id="play">Play</button>
+  <label class="toggle"><input id="corotate" type="checkbox"> co-rotate inset</label>
+  <span id="frameLabel">020</span>
+  <input id="frame" type="range" min="20" max="519" value="20" step="1">
+</div>
+<div id="status">loading…</div>
+
+<script>
+(() => {
+  const FOV = 30.0;
+  const HALF = FOV / 2.0;
+  const EXTENT = [-HALF, HALF, -HALF, HALF];
+  const NPIX = 1024;
+  const SNE_FADE = 3;
+  const MAIN_PX = 600, ZOOM_PX = 520;
+  const FRAME_FMT = (n) => 'frames/frame_' + String(n).padStart(3, '0') + '.png';
+
+  const mainCv = document.getElementById('main');
+  const zoomCv = document.getElementById('zoom');
+  const mainCtx = mainCv.getContext('2d');
+  const zoomCtx = zoomCv.getContext('2d');
+  mainCtx.imageSmoothingEnabled = false;
+  zoomCtx.imageSmoothingEnabled = true;
+  const slider = document.getElementById('frame');
+  const frameLabel = document.getElementById('frameLabel');
+  const playBtn = document.getElementById('play');
+  const corotateBox = document.getElementById('corotate');
+  const zoomLabel = document.getElementById('zoomLabel');
+  const status = document.getElementById('status');
+
+  let fmin = 20, fmax = 519;
+  let frameIdx = fmin;
+  let rect = { x0: -5, y0: -5, x1: 5, y1: 5 };  // kpc
+  // Flat per-frame data sliced via offsets: sneXs/Ys are float32, sneAges is uint8.
+  // For frame f, rows are [offsets[f-fmin] .. offsets[f-fmin+1]).
+  let sneXs = null, sneYs = null, sneAges = null, sneOffsets = null;
+  let frames = {};       // frame_idx -> Image
+  let playing = false;
+  let playTimer = null;
+
+  // Rotation curve: parallel arrays r[] and dphi[] in radians/frame.
+  let rotR = null, rotDphi = null;
+  let lastFrame = null;
+
+  // ---- coordinate helpers ----------------------------------------------------
+  // Main canvas: kpc -> px (origin top-left, y axis flipped to match physics).
+  const kpcToMainX = (x) => ((x - EXTENT[0]) / FOV) * MAIN_PX;
+  const kpcToMainY = (y) => ((EXTENT[3] - y) / FOV) * MAIN_PX;
+  const mainXToKpc = (px) => EXTENT[0] + (px / MAIN_PX) * FOV;
+  const mainYToKpc = (py) => EXTENT[3] - (py / MAIN_PX) * FOV;
+
+  // Zoom canvas: kpc -> px given current rect.
+  const zoomKpcToX = (x) => ((x - rect.x0) / (rect.x1 - rect.x0)) * ZOOM_PX;
+  const zoomKpcToY = (y) => ((rect.y1 - y) / (rect.y1 - rect.y0)) * ZOOM_PX;
+
+  // Source image pixel coords for ctx.drawImage cropping.
+  const kpcToSrcX = (x) => ((x - EXTENT[0]) / FOV) * NPIX;
+  const kpcToSrcY = (y) => ((EXTENT[3] - y) / FOV) * NPIX;
+
+  // ---- frame loading ---------------------------------------------------------
+  function preloadFrames() {
+    let loaded = 0;
+    const total = fmax - fmin + 1;
+    for (let i = fmin; i <= fmax; i++) {
+      const img = new Image();
+      img.decoding = 'async';
+      img.onload = () => {
+        loaded++;
+        if (loaded % 50 === 0 || loaded === total) {
+          status.textContent = `loaded ${loaded}/${total} frames`;
+        }
+        if (loaded === total) {
+          const nSne = sneXs ? sneXs.length : 0;
+          status.textContent = `${total} frames + ${nSne} active SN entries ready`;
+        }
+        if (i === frameIdx) render();
+      };
+      img.onerror = () => { /* missing frame */ };
+      img.src = FRAME_FMT(i);
+      frames[i] = img;
+    }
+  }
+
+  // ---- rotation curve --------------------------------------------------------
+  async function loadRotation() {
+    try {
+      const r = await fetch('rotation.json');
+      const data = await r.json();
+      rotR = data.r_centers_kpc;
+      rotDphi = data.dphi_per_frame;
+    } catch (e) {
+      console.warn('rotation.json not found; co-rotation disabled');
+      rotR = rotDphi = null;
+      corotateBox.disabled = true;
+    }
+  }
+
+  function dphiAt(R) {
+    if (!rotR || rotR.length === 0) return 0;
+    if (R <= rotR[0]) return rotDphi[0];
+    if (R >= rotR[rotR.length - 1]) return rotDphi[rotDphi.length - 1];
+    // Linear interpolation in the table.
+    let lo = 0, hi = rotR.length - 1;
+    while (hi - lo > 1) {
+      const mid = (lo + hi) >> 1;
+      if (rotR[mid] <= R) lo = mid; else hi = mid;
+    }
+    const t = (R - rotR[lo]) / (rotR[hi] - rotR[lo]);
+    return rotDphi[lo] + t * (rotDphi[hi] - rotDphi[lo]);
+  }
+
+  // Rotate the inset center by Σ dphi(R) over `df` frames (df may be negative).
+  // For each unit step we re-evaluate dphi at the current R, since R may shift
+  // slightly during the integration.
+  function applyCorotation(df) {
+    if (!corotateBox.checked) return;
+    if (df === 0 || !rotR) return;
+    const cx0 = (rect.x0 + rect.x1) / 2;
+    const cy0 = (rect.y0 + rect.y1) / 2;
+    const w = rect.x1 - rect.x0;
+    const h = rect.y1 - rect.y0;
+    let cx = cx0, cy = cy0;
+    const steps = Math.abs(df);
+    const dir = Math.sign(df);
+    for (let k = 0; k < steps; k++) {
+      const R = Math.hypot(cx, cy);
+      const a = dphiAt(R) * dir;
+      const c = Math.cos(a), s = Math.sin(a);
+      const nx = c * cx - s * cy;
+      const ny = s * cx + c * cy;
+      cx = nx; cy = ny;
+    }
+    // Clamp the new center so the rectangle stays inside the FOV.
+    cx = clamp(cx, EXTENT[0] + w / 2, EXTENT[1] - w / 2);
+    cy = clamp(cy, EXTENT[2] + h / 2, EXTENT[3] - h / 2);
+    rect = { x0: cx - w / 2, y0: cy - h / 2, x1: cx + w / 2, y1: cy + h / 2 };
+  }
+
+  // ---- SNe loading -----------------------------------------------------------
+  async function loadSne() {
+    try {
+      const meta = await (await fetch('meta.json')).json();
+      fmin = meta.fmin; fmax = meta.fmax;
+      slider.min = fmin; slider.max = fmax; slider.value = fmin;
+      frameIdx = fmin;
+      frameLabel.textContent = String(fmin).padStart(3, '0');
+
+      const [xb, yb, ab, ob] = await Promise.all([
+        fetch(meta.files.x).then(r => r.arrayBuffer()),
+        fetch(meta.files.y).then(r => r.arrayBuffer()),
+        fetch(meta.files.age).then(r => r.arrayBuffer()),
+        fetch(meta.files.offsets).then(r => r.arrayBuffer()),
+      ]);
+      sneXs = new Float32Array(xb);
+      sneYs = new Float32Array(yb);
+      sneAges = new Uint8Array(ab);
+      sneOffsets = new Int32Array(ob);
+    } catch (e) {
+      console.error('SNe load failed', e);
+      sneXs = sneYs = sneAges = sneOffsets = null;
+    }
+  }
+
+  // ---- rendering -------------------------------------------------------------
+  function drawSneZoom() {
+    if (!sneOffsets) return;
+    const i0 = sneOffsets[frameIdx - fmin];
+    const i1 = sneOffsets[frameIdx - fmin + 1];
+    const xlo = Math.min(rect.x0, rect.x1);
+    const xhi = Math.max(rect.x0, rect.x1);
+    const ylo = Math.min(rect.y0, rect.y1);
+    const yhi = Math.max(rect.y0, rect.y1);
+    for (let i = i0; i < i1; i++) {
+      const x = sneXs[i], y = sneYs[i];
+      if (x < xlo || x > xhi || y < ylo || y > yhi) continue;
+      const age = sneAges[i];
+      const a = (SNE_FADE - age) / SNE_FADE;
+      zoomCtx.fillStyle = `rgba(255,221,51,${a.toFixed(3)})`;
+      zoomCtx.beginPath();
+      zoomCtx.arc(zoomKpcToX(x), zoomKpcToY(y), 3, 0, Math.PI * 2);
+      zoomCtx.fill();
+    }
+  }
+
+  function drawRect() {
+    const x = kpcToMainX(Math.min(rect.x0, rect.x1));
+    const y = kpcToMainY(Math.max(rect.y0, rect.y1));
+    const w = Math.abs(kpcToMainX(rect.x1) - kpcToMainX(rect.x0));
+    const h = Math.abs(kpcToMainY(rect.y0) - kpcToMainY(rect.y1));
+    mainCtx.strokeStyle = '#ffffff';
+    mainCtx.lineWidth = 2;
+    mainCtx.strokeRect(x, y, w, h);
+  }
+
+  function render() {
+    const img = frames[frameIdx];
+    mainCtx.fillStyle = '#000';
+    mainCtx.fillRect(0, 0, MAIN_PX, MAIN_PX);
+    if (img && img.complete && img.naturalWidth > 0) {
+      mainCtx.drawImage(img, 0, 0, MAIN_PX, MAIN_PX);
+    }
+    drawRect();
+
+    // Zoom: crop the source image to the rectangle.
+    zoomCtx.fillStyle = '#000';
+    zoomCtx.fillRect(0, 0, ZOOM_PX, ZOOM_PX);
+    if (img && img.complete && img.naturalWidth > 0) {
+      const sx = kpcToSrcX(Math.min(rect.x0, rect.x1));
+      const sy = kpcToSrcY(Math.max(rect.y0, rect.y1));
+      const sw = Math.abs(kpcToSrcX(rect.x1) - kpcToSrcX(rect.x0));
+      const sh = Math.abs(kpcToSrcY(rect.y0) - kpcToSrcY(rect.y1));
+      if (sw > 0 && sh > 0) {
+        zoomCtx.drawImage(img, sx, sy, sw, sh, 0, 0, ZOOM_PX, ZOOM_PX);
+      }
+    }
+    drawSneZoom();
+
+    frameLabel.textContent = String(frameIdx).padStart(3, '0');
+    zoomLabel.textContent = `Zoom (${rect.x0.toFixed(1)}, ${rect.y0.toFixed(1)}) → (${rect.x1.toFixed(1)}, ${rect.y1.toFixed(1)}) kpc`;
+  }
+
+  // ---- mouse interaction on main canvas -------------------------------------
+  let drag = null;  // { mode: 'move'|'nw'|'ne'|'sw'|'se'|'n'|'s'|'e'|'w', start: {...} }
+  const HANDLE_PX = 10;
+
+  function rectCornersPx() {
+    return {
+      x0: kpcToMainX(Math.min(rect.x0, rect.x1)),
+      x1: kpcToMainX(Math.max(rect.x0, rect.x1)),
+      y0: kpcToMainY(Math.max(rect.y0, rect.y1)),
+      y1: kpcToMainY(Math.min(rect.y0, rect.y1)),
+    };
+  }
+
+  function hitTest(px, py) {
+    const r = rectCornersPx();
+    const near = (a, b) => Math.abs(a - b) < HANDLE_PX;
+    const inX = px > r.x0 - HANDLE_PX && px < r.x1 + HANDLE_PX;
+    const inY = py > r.y0 - HANDLE_PX && py < r.y1 + HANDLE_PX;
+    if (!inX || !inY) return null;
+    const left = near(px, r.x0), right = near(px, r.x1);
+    const top = near(py, r.y0), bot = near(py, r.y1);
+    if (top && left) return 'nw';
+    if (top && right) return 'ne';
+    if (bot && left) return 'sw';
+    if (bot && right) return 'se';
+    if (top) return 'n';
+    if (bot) return 's';
+    if (left) return 'w';
+    if (right) return 'e';
+    if (px > r.x0 && px < r.x1 && py > r.y0 && py < r.y1) return 'move';
+    return null;
+  }
+
+  function cursorFor(mode) {
+    return {
+      'move': 'grab', 'n': 'ns-resize', 's': 'ns-resize',
+      'e': 'ew-resize', 'w': 'ew-resize',
+      'nw': 'nwse-resize', 'se': 'nwse-resize',
+      'ne': 'nesw-resize', 'sw': 'nesw-resize',
+    }[mode] || 'crosshair';
+  }
+
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+  // Force the rectangle to be square by adjusting the edge(s) being resized.
+  // `mode` is the drag mode (e.g. 'nw', 'e'); `anchor` is the fixed corner/edge.
+  function squarify(r, mode) {
+    const w = Math.abs(r.x1 - r.x0);
+    const h = Math.abs(r.y1 - r.y0);
+    let s = Math.max(w, h);
+    s = Math.max(s, 1.0);
+    s = Math.min(s, FOV);
+    // Anchor depends on which edge is being dragged: keep the opposite edge fixed.
+    const ax = mode.includes('w') ? r.x1 : r.x0;
+    const ay = mode.includes('s') ? r.y1 : r.y0;
+    const sxSign = mode.includes('w') ? -1 : 1;
+    const sySign = mode.includes('s') ? -1 : 1;
+    let nx0 = mode.includes('w') ? ax + sxSign * s : ax;
+    let nx1 = mode.includes('w') ? ax : ax + sxSign * s;
+    let ny0 = mode.includes('s') ? ay + sySign * s : ay;
+    let ny1 = mode.includes('s') ? ay : ay + sySign * s;
+    // For pure horizontal/vertical edge drags, mirror the other axis around its midpoint.
+    if (mode === 'e' || mode === 'w') {
+      const cy = (r.y0 + r.y1) / 2;
+      ny0 = cy - s / 2; ny1 = cy + s / 2;
+    } else if (mode === 'n' || mode === 's') {
+      const cx = (r.x0 + r.x1) / 2;
+      nx0 = cx - s / 2; nx1 = cx + s / 2;
+    }
+    // Clamp into the FOV; if it overflows, shift back inside.
+    if (nx0 < EXTENT[0]) { const d = EXTENT[0] - nx0; nx0 += d; nx1 += d; }
+    if (nx1 > EXTENT[1]) { const d = nx1 - EXTENT[1]; nx0 -= d; nx1 -= d; }
+    if (ny0 < EXTENT[2]) { const d = EXTENT[2] - ny0; ny0 += d; ny1 += d; }
+    if (ny1 > EXTENT[3]) { const d = ny1 - EXTENT[3]; ny0 -= d; ny1 -= d; }
+    return { x0: nx0, y0: ny0, x1: nx1, y1: ny1 };
+  }
+
+  mainCv.addEventListener('mousemove', (e) => {
+    const px = e.offsetX, py = e.offsetY;
+    if (!drag) {
+      mainCv.style.cursor = cursorFor(hitTest(px, py));
+      return;
+    }
+    const x = clamp(mainXToKpc(px), EXTENT[0], EXTENT[1]);
+    const y = clamp(mainYToKpc(py), EXTENT[2], EXTENT[3]);
+    const s = drag.start;
+    if (drag.mode === 'move') {
+      const dx = x - s.x, dy = y - s.y;
+      let nx0 = s.r.x0 + dx, nx1 = s.r.x1 + dx;
+      let ny0 = s.r.y0 + dy, ny1 = s.r.y1 + dy;
+      // Keep rectangle inside the FOV.
+      const w = nx1 - nx0, h = ny1 - ny0;
+      if (nx0 < EXTENT[0]) { nx0 = EXTENT[0]; nx1 = nx0 + w; }
+      if (nx1 > EXTENT[1]) { nx1 = EXTENT[1]; nx0 = nx1 - w; }
+      if (ny0 < EXTENT[2]) { ny0 = EXTENT[2]; ny1 = ny0 + h; }
+      if (ny1 > EXTENT[3]) { ny1 = EXTENT[3]; ny0 = ny1 - h; }
+      rect = { x0: nx0, y0: ny0, x1: nx1, y1: ny1 };
+    } else {
+      let { x0, y0, x1, y1 } = s.r;
+      if (drag.mode.includes('w')) x0 = x;
+      if (drag.mode.includes('e')) x1 = x;
+      if (drag.mode.includes('n')) y1 = y;  // n = top in canvas px = larger y in kpc
+      if (drag.mode.includes('s')) y0 = y;
+      rect = squarify({ x0, y0, x1, y1 }, drag.mode);
+    }
+    render();
+  });
+
+  mainCv.addEventListener('mousedown', (e) => {
+    const mode = hitTest(e.offsetX, e.offsetY);
+    if (!mode) return;
+    drag = { mode, start: { x: mainXToKpc(e.offsetX), y: mainYToKpc(e.offsetY),
+                            r: { ...rect } } };
+    mainCv.style.cursor = mode === 'move' ? 'grabbing' : cursorFor(mode);
+    e.preventDefault();
+  });
+  window.addEventListener('mouseup', () => { drag = null; });
+
+  // ---- slider + play --------------------------------------------------------
+  function setFrame(newFrame) {
+    if (lastFrame === null) lastFrame = newFrame;
+    const df = newFrame - lastFrame;
+    if (df !== 0) applyCorotation(df);
+    frameIdx = newFrame;
+    lastFrame = newFrame;
+    render();
+  }
+
+  slider.addEventListener('input', () => {
+    setFrame(parseInt(slider.value, 10));
+  });
+
+  playBtn.addEventListener('click', () => {
+    playing = !playing;
+    playBtn.textContent = playing ? 'Pause' : 'Play';
+    if (playing) {
+      playTimer = setInterval(() => {
+        const next = frameIdx >= fmax ? fmin : frameIdx + 1;
+        slider.value = next;
+        setFrame(next);
+      }, 200);
+    } else if (playTimer) {
+      clearInterval(playTimer); playTimer = null;
+    }
+  });
+
+  // Toggling co-rotation should not retroactively rotate; reset the anchor.
+  corotateBox.addEventListener('change', () => { lastFrame = frameIdx; });
+
+  // ---- bootstrap -------------------------------------------------------------
+  (async () => {
+    await Promise.all([loadSne(), loadRotation()]);
+    lastFrame = frameIdx;
+    preloadFrames();
+    render();
+  })();
+})();
+</script>
+</body>
+</html>
