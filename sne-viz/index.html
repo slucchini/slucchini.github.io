@@ -22,6 +22,23 @@
   #status { font-size: 12px; color: #888; margin-top: 8px; }
   .toggle { display: flex; align-items: center; gap: 6px; user-select: none; cursor: pointer; }
   .toggle input { cursor: pointer; }
+  .toggle select { background: #2a2a2a; color: #ddd; border: 1px solid #444;
+                    padding: 4px 6px; border-radius: 3px; cursor: pointer; }
+  .panel { position: relative; }
+  .loading-overlay { position: absolute; inset: 4px; display: flex; flex-direction: column;
+                     align-items: center; justify-content: center; gap: 12px;
+                     background: rgba(0,0,0,0.65); color: #ddd; font-size: 14px;
+                     pointer-events: none; transition: opacity 0.2s; }
+  .loading-overlay.hidden { opacity: 0; }
+  .spinner { width: 36px; height: 36px; border: 3px solid #444; border-top-color: #ffdd33;
+             border-radius: 50%; animation: spin 0.9s linear infinite; }
+  .progress-bar { width: 60%; height: 6px; background: #333; border-radius: 3px; overflow: hidden; }
+  .progress-bar > div { height: 100%; background: #ffdd33; width: 0%; transition: width 0.1s linear; }
+  #zoomCoord { position: absolute; right: 4px; bottom: 4px; font-size: 12px;
+               color: #888; font-variant-numeric: tabular-nums;
+               pointer-events: none; opacity: 0; transition: opacity 0.1s; }
+  #zoomCoord.visible { opacity: 1; }
+  @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
@@ -29,16 +46,28 @@
 <div class="row">
   <div class="panel">
     <canvas id="main" width="600" height="600"></canvas>
+    <div id="loading" class="loading-overlay">
+      <div class="spinner"></div>
+      <div id="loadingText">loading frames…</div>
+      <div class="progress-bar"><div id="loadingBar"></div></div>
+    </div>
     <div class="label">Main view (drag the white rectangle)</div>
   </div>
   <div class="panel zoom">
     <canvas id="zoom" width="520" height="520"></canvas>
+    <div id="zoomCoord"></div>
     <div class="label" id="zoomLabel">Zoom</div>
   </div>
 </div>
 <div class="controls">
   <button id="play">Play</button>
   <label class="toggle"><input id="corotate" type="checkbox" checked> co-rotate inset</label>
+  <label class="toggle">background:
+    <select id="background">
+      <option value="gas">Gas column density</option>
+      <option value="j77">7.7 μm emission</option>
+    </select>
+  </label>
   <span id="frameLabel">020</span>
   <input id="frame" type="range" min="20" max="519" value="20" step="1">
 </div>
@@ -49,10 +78,13 @@
   const FOV = 30.0;
   const HALF = FOV / 2.0;
   const EXTENT = [-HALF, HALF, -HALF, HALF];
-  const NPIX = 1024;
+  const NPIX = 512;
   const SNE_FADE = 3;
   const MAIN_PX = 600, ZOOM_PX = 520;
-  const FRAME_FMT = (n) => 'frames/frame_' + String(n).padStart(3, '0') + '.png';
+  // Each background ID maps to a frames subdirectory under site/.
+  const BG_DIRS = { gas: 'frames', j77: 'frames_j77' };
+  let bgId = 'gas';
+  const FRAME_FMT = (dir, n) => dir + '/frame_' + String(n).padStart(3, '0') + '.png';
 
   const mainCv = document.getElementById('main');
   const zoomCv = document.getElementById('zoom');
@@ -73,7 +105,26 @@
   // Flat per-frame data sliced via offsets: sneXs/Ys are float32, sneAges is uint8.
   // For frame f, rows are [offsets[f-fmin] .. offsets[f-fmin+1]).
   let sneXs = null, sneYs = null, sneAges = null, sneOffsets = null;
-  let frames = {};       // frame_idx -> Image
+  // Per-background image caches: { gas: {idx: Image}, j77: {idx: Image} }.
+  let frameCaches = { gas: {}, j77: {} };
+  let loadedCounts = { gas: 0, j77: 0 };
+  let frames = frameCaches[bgId];
+
+  const loadingEl = document.getElementById('loading');
+  const loadingText = document.getElementById('loadingText');
+  const loadingBar = document.getElementById('loadingBar');
+  function updateLoadingUI() {
+    const total = fmax - fmin + 1;
+    const n = loadedCounts[bgId] || 0;
+    if (n >= total) {
+      loadingEl.classList.add('hidden');
+    } else {
+      loadingEl.classList.remove('hidden');
+      const label = bgId === 'j77' ? '7.7 μm emission' : 'gas density';
+      loadingText.textContent = `loading ${label} frames… ${n}/${total}`;
+      loadingBar.style.width = (100 * n / total).toFixed(1) + '%';
+    }
+  }
   let playing = false;
   let playTimer = null;
 
@@ -97,27 +148,37 @@
   const kpcToSrcY = (y) => ((EXTENT[3] - y) / FOV) * NPIX;
 
   // ---- frame loading ---------------------------------------------------------
-  function preloadFrames() {
-    let loaded = 0;
+  function preloadFrames(which) {
+    const dir = BG_DIRS[which];
+    const cache = frameCaches[which];
     const total = fmax - fmin + 1;
-    for (let i = fmin; i <= fmax; i++) {
-      const img = new Image();
-      img.decoding = 'async';
-      img.onload = () => {
-        loaded++;
-        if (loaded % 50 === 0 || loaded === total) {
-          status.textContent = `loaded ${loaded}/${total} frames`;
+    const onDone = () => {
+      loadedCounts[which]++;
+      if (which === bgId) {
+        updateLoadingUI();
+        if (loadedCounts[which] % 50 === 0 || loadedCounts[which] === total) {
+          status.textContent = `loaded ${loadedCounts[which]}/${total} ${which} frames`;
         }
-        if (loaded === total) {
+        if (loadedCounts[which] === total) {
           const nSne = sneXs ? sneXs.length : 0;
           status.textContent = `${total} frames + ${nSne} active SN entries ready`;
         }
-        if (i === frameIdx) render();
+      }
+    };
+    for (let i = fmin; i <= fmax; i++) {
+      if (cache[i]) continue;
+      const idx = i;
+      const img = new Image();
+      img.decoding = 'async';
+      img.onload = () => {
+        onDone();
+        if (which === bgId && idx === frameIdx) render();
       };
-      img.onerror = () => { /* missing frame */ };
-      img.src = FRAME_FMT(i);
-      frames[i] = img;
+      img.onerror = onDone;
+      img.src = FRAME_FMT(dir, i);
+      cache[i] = img;
     }
+    updateLoadingUI();
   }
 
   // ---- rotation curve --------------------------------------------------------
@@ -376,6 +437,19 @@
   });
   window.addEventListener('mouseup', () => { drag = null; });
 
+  // ---- zoom canvas cursor coordinate readout --------------------------------
+  const zoomCoord = document.getElementById('zoomCoord');
+  zoomCv.addEventListener('mousemove', (e) => {
+    const px = e.offsetX, py = e.offsetY;
+    const x = rect.x0 + (px / ZOOM_PX) * (rect.x1 - rect.x0);
+    const y = rect.y1 - (py / ZOOM_PX) * (rect.y1 - rect.y0);
+    zoomCoord.textContent = `(${x.toFixed(2)}, ${y.toFixed(2)}) kpc`;
+    zoomCoord.classList.add('visible');
+  });
+  zoomCv.addEventListener('mouseleave', () => {
+    zoomCoord.classList.remove('visible');
+  });
+
   // ---- slider + play --------------------------------------------------------
   function setFrame(newFrame) {
     if (lastFrame === null) lastFrame = newFrame;
@@ -407,11 +481,24 @@
   // Toggling co-rotation should not retroactively rotate; reset the anchor.
   corotateBox.addEventListener('change', () => { lastFrame = frameIdx; });
 
+  const bgSelect = document.getElementById('background');
+  bgSelect.addEventListener('change', () => {
+    bgId = bgSelect.value;
+    frames = frameCaches[bgId];
+    updateLoadingUI();
+    preloadFrames(bgId);
+    render();
+  });
+
   // ---- bootstrap -------------------------------------------------------------
   (async () => {
     await Promise.all([loadSne(), loadRotation()]);
     lastFrame = frameIdx;
-    preloadFrames();
+    preloadFrames(bgId);
+    // Lazy preload the other background after the active one is queued.
+    for (const id of Object.keys(BG_DIRS)) {
+      if (id !== bgId) preloadFrames(id);
+    }
     render();
   })();
 })();
