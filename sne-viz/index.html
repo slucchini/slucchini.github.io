@@ -4,16 +4,30 @@
 <meta charset="utf-8">
 <title>I11 gas + supernovae</title>
 <style>
+  :root {
+    /* Each canvas is square. Cap by display width and by remaining vertical
+       space so the whole widget fits in the viewport on landscape phones. */
+    --canvas-side: min(600px, 46vw, calc(100vh - 140px));
+  }
   body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #111; color: #ddd;
-         margin: 0; padding: 16px; }
-  h1 { font-size: 18px; margin: 0 0 12px 0; }
-  .row { display: flex; flex-direction: row; gap: 16px; align-items: flex-start; }
+         margin: 0; padding: 12px; }
+  h1 { font-size: 18px; margin: 0 0 10px 0; }
+  .row { display: flex; flex-direction: row; gap: 10px; align-items: flex-start;
+         flex-wrap: wrap; }
   .panel { background: #000; border: 1px solid #333; padding: 4px; border-radius: 4px; }
-  canvas#main { width: 600px; height: 600px; cursor: grab; display: block; }
-  canvas#zoom { width: 520px; height: 520px; display: block; }
-  .panel.zoom { width: 528px; }
+  canvas#main { width: var(--canvas-side); height: var(--canvas-side);
+                cursor: grab; display: block; touch-action: none; }
+  canvas#zoom { width: var(--canvas-side); height: var(--canvas-side);
+                display: block; touch-action: none; }
   .label { font-size: 12px; color: #888; padding: 4px 0 0 4px; }
-  .controls { margin-top: 16px; display: flex; gap: 16px; align-items: center; max-width: 1180px; }
+  .controls { margin-top: 12px; display: flex; gap: 12px; align-items: center;
+              flex-wrap: wrap; max-width: 1180px; }
+  @media (max-height: 480px) {
+    body { padding: 6px; }
+    h1 { font-size: 14px; margin: 0 0 6px 0; }
+    :root { --canvas-side: min(600px, 46vw, calc(100vh - 96px)); }
+    .controls { margin-top: 6px; gap: 8px; font-size: 12px; }
+  }
   #frame { flex: 1; }
   button { background: #2a2a2a; color: #ddd; border: 1px solid #444; padding: 6px 12px;
            border-radius: 3px; cursor: pointer; }
@@ -396,8 +410,30 @@
     return { x0: nx0, y0: ny0, x1: nx1, y1: ny1 };
   }
 
-  mainCv.addEventListener('mousemove', (e) => {
-    const px = e.offsetX, py = e.offsetY;
+  // Convert a pointer event's client coordinates to logical canvas pixels,
+  // since CSS may scale the canvas to fit the viewport.
+  function canvasPx(cv, e) {
+    const r = cv.getBoundingClientRect();
+    return {
+      px: (e.clientX - r.left) * cv.width / r.width,
+      py: (e.clientY - r.top) * cv.height / r.height,
+    };
+  }
+
+  // Recenter the rectangle on (x, y) kpc, keeping size and clamping to FOV.
+  function recenterRectAt(x, y) {
+    const w = rect.x1 - rect.x0, h = rect.y1 - rect.y0;
+    let nx0 = x - w / 2, nx1 = x + w / 2;
+    let ny0 = y - h / 2, ny1 = y + h / 2;
+    if (nx0 < EXTENT[0]) { nx1 += EXTENT[0] - nx0; nx0 = EXTENT[0]; }
+    if (nx1 > EXTENT[1]) { nx0 -= nx1 - EXTENT[1]; nx1 = EXTENT[1]; }
+    if (ny0 < EXTENT[2]) { ny1 += EXTENT[2] - ny0; ny0 = EXTENT[2]; }
+    if (ny1 > EXTENT[3]) { ny0 -= ny1 - EXTENT[3]; ny1 = EXTENT[3]; }
+    rect = { x0: nx0, y0: ny0, x1: nx1, y1: ny1 };
+  }
+
+  mainCv.addEventListener('pointermove', (e) => {
+    const { px, py } = canvasPx(mainCv, e);
     if (!drag) {
       mainCv.style.cursor = cursorFor(hitTest(px, py));
       return;
@@ -409,7 +445,6 @@
       const dx = x - s.x, dy = y - s.y;
       let nx0 = s.r.x0 + dx, nx1 = s.r.x1 + dx;
       let ny0 = s.r.y0 + dy, ny1 = s.r.y1 + dy;
-      // Keep rectangle inside the FOV.
       const w = nx1 - nx0, h = ny1 - ny0;
       if (nx0 < EXTENT[0]) { nx0 = EXTENT[0]; nx1 = nx0 + w; }
       if (nx1 > EXTENT[1]) { nx1 = EXTENT[1]; nx0 = nx1 - w; }
@@ -427,26 +462,41 @@
     render();
   });
 
-  mainCv.addEventListener('mousedown', (e) => {
-    const mode = hitTest(e.offsetX, e.offsetY);
-    if (!mode) return;
-    drag = { mode, start: { x: mainXToKpc(e.offsetX), y: mainYToKpc(e.offsetY),
+  mainCv.addEventListener('pointerdown', (e) => {
+    const { px, py } = canvasPx(mainCv, e);
+    let mode = hitTest(px, py);
+    // Tap/click outside the rectangle (or inside without grabbing a handle):
+    // recenter the zoom rectangle on the click location and start a move drag.
+    if (!mode || mode === 'move') {
+      const cx = clamp(mainXToKpc(px), EXTENT[0], EXTENT[1]);
+      const cy = clamp(mainYToKpc(py), EXTENT[2], EXTENT[3]);
+      recenterRectAt(cx, cy);
+      mode = 'move';
+      render();
+    }
+    drag = { mode, start: { x: mainXToKpc(px), y: mainYToKpc(py),
                             r: { ...rect } } };
     mainCv.style.cursor = mode === 'move' ? 'grabbing' : cursorFor(mode);
+    try { mainCv.setPointerCapture(e.pointerId); } catch (_) {}
     e.preventDefault();
   });
-  window.addEventListener('mouseup', () => { drag = null; });
+  function endDrag(e) {
+    drag = null;
+    try { mainCv.releasePointerCapture(e.pointerId); } catch (_) {}
+  }
+  mainCv.addEventListener('pointerup', endDrag);
+  mainCv.addEventListener('pointercancel', endDrag);
 
   // ---- zoom canvas cursor coordinate readout --------------------------------
   const zoomCoord = document.getElementById('zoomCoord');
-  zoomCv.addEventListener('mousemove', (e) => {
-    const px = e.offsetX, py = e.offsetY;
+  zoomCv.addEventListener('pointermove', (e) => {
+    const { px, py } = canvasPx(zoomCv, e);
     const x = rect.x0 + (px / ZOOM_PX) * (rect.x1 - rect.x0);
     const y = rect.y1 - (py / ZOOM_PX) * (rect.y1 - rect.y0);
     zoomCoord.textContent = `(${x.toFixed(2)}, ${y.toFixed(2)}) kpc`;
     zoomCoord.classList.add('visible');
   });
-  zoomCv.addEventListener('mouseleave', () => {
+  zoomCv.addEventListener('pointerleave', () => {
     zoomCoord.classList.remove('visible');
   });
 
