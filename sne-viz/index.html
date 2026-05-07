@@ -335,7 +335,8 @@
 
   // ---- mouse interaction on main canvas -------------------------------------
   let drag = null;  // { mode: 'move'|'nw'|'ne'|'sw'|'se'|'n'|'s'|'e'|'w', start: {...} }
-  const HANDLE_PX = 10;
+  // Larger hit region on touch devices where fingers are less precise.
+  const HANDLE_PX = window.matchMedia('(pointer: coarse)').matches ? 24 : 10;
 
   function rectCornersPx() {
     return {
@@ -420,18 +421,6 @@
     };
   }
 
-  // Recenter the rectangle on (x, y) kpc, keeping size and clamping to FOV.
-  function recenterRectAt(x, y) {
-    const w = rect.x1 - rect.x0, h = rect.y1 - rect.y0;
-    let nx0 = x - w / 2, nx1 = x + w / 2;
-    let ny0 = y - h / 2, ny1 = y + h / 2;
-    if (nx0 < EXTENT[0]) { nx1 += EXTENT[0] - nx0; nx0 = EXTENT[0]; }
-    if (nx1 > EXTENT[1]) { nx0 -= nx1 - EXTENT[1]; nx1 = EXTENT[1]; }
-    if (ny0 < EXTENT[2]) { ny1 += EXTENT[2] - ny0; ny0 = EXTENT[2]; }
-    if (ny1 > EXTENT[3]) { ny0 -= ny1 - EXTENT[3]; ny1 = EXTENT[3]; }
-    rect = { x0: nx0, y0: ny0, x1: nx1, y1: ny1 };
-  }
-
   mainCv.addEventListener('pointermove', (e) => {
     const { px, py } = canvasPx(mainCv, e);
     if (!drag) {
@@ -464,16 +453,8 @@
 
   mainCv.addEventListener('pointerdown', (e) => {
     const { px, py } = canvasPx(mainCv, e);
-    let mode = hitTest(px, py);
-    // Tap/click outside the rectangle (or inside without grabbing a handle):
-    // recenter the zoom rectangle on the click location and start a move drag.
-    if (!mode || mode === 'move') {
-      const cx = clamp(mainXToKpc(px), EXTENT[0], EXTENT[1]);
-      const cy = clamp(mainYToKpc(py), EXTENT[2], EXTENT[3]);
-      recenterRectAt(cx, cy);
-      mode = 'move';
-      render();
-    }
+    const mode = hitTest(px, py);
+    if (!mode) return;
     drag = { mode, start: { x: mainXToKpc(px), y: mainYToKpc(py),
                             r: { ...rect } } };
     mainCv.style.cursor = mode === 'move' ? 'grabbing' : cursorFor(mode);
