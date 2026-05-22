@@ -1,0 +1,1 @@
+{"count": 4493871, "fmin": 20, "fmax": 519, "extent": [-15.0, 15.0, -15.0, 15.0], "fade": 3, "npix": 512, "files": {"x": "sne_x.f32", "y": "sne_y.f32", "age": "sne_age.u8", "offsets": "sne_offsets.i32"}, "backgrounds": [{"id": "gas", "label": "Gas column density", "frames_dir": "frames"}, {"id": "j77", "label": "7.7 \u03bcm emission", "frames_dir": "frames_j77"}]}

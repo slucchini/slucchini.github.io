@@ -46,8 +46,11 @@
   .loading-overlay.hidden { opacity: 0; }
   .spinner { width: 36px; height: 36px; border: 3px solid #444; border-top-color: #ffdd33;
              border-radius: 50%; animation: spin 0.9s linear infinite; }
-  .progress-bar { width: 60%; height: 6px; background: #333; border-radius: 3px; overflow: hidden; }
-  .progress-bar > div { height: 100%; background: #ffdd33; width: 0%; transition: width 0.1s linear; }
+  #miniProgress { display: flex; align-items: center; gap: 8px; margin-top: 6px;
+                  font-size: 11px; color: #888; transition: opacity 0.3s; }
+  #miniProgress.hidden { opacity: 0; pointer-events: none; }
+  #miniBarTrack { width: 160px; height: 4px; background: #333; border-radius: 2px; overflow: hidden; }
+  #miniBarTrack > div { height: 100%; background: #ffdd33; width: 0%; transition: width 0.15s linear; }
   #zoomCoord { position: absolute; right: 4px; bottom: 4px; font-size: 12px;
                color: #888; font-variant-numeric: tabular-nums;
                pointer-events: none; opacity: 0; transition: opacity 0.1s; }
@@ -62,8 +65,7 @@
     <canvas id="main" width="600" height="600"></canvas>
     <div id="loading" class="loading-overlay">
       <div class="spinner"></div>
-      <div id="loadingText">loading frames…</div>
-      <div class="progress-bar"><div id="loadingBar"></div></div>
+      <div id="loadingText">loading…</div>
     </div>
     <div class="label">Main view (drag the white rectangle)</div>
   </div>
@@ -75,17 +77,23 @@
 </div>
 <div class="controls">
   <button id="play">Play</button>
+  <label class="toggle">speed:
+    <input id="speed" type="range" min="1" max="30" value="5" step="1">
+    <span id="speedLabel">5 fps</span>
+  </label>
   <label class="toggle"><input id="corotate" type="checkbox" checked> co-rotate inset</label>
+  <label class="toggle"><input id="rotate" type="checkbox"> aim inset at center</label>
   <label class="toggle">background:
-    <select id="background">
-      <option value="gas">Gas column density</option>
-      <option value="j77">7.7 μm emission</option>
-    </select>
+    <select id="background"></select>
   </label>
   <span id="frameLabel">020</span>
   <input id="frame" type="range" min="20" max="519" value="20" step="1">
 </div>
 <div id="status">loading…</div>
+<div id="miniProgress" class="hidden">
+  <span id="miniBarText"></span>
+  <div id="miniBarTrack"><div id="miniBarFill"></div></div>
+</div>
 
 <script>
 (() => {
@@ -93,10 +101,14 @@
   const HALF = FOV / 2.0;
   const EXTENT = [-HALF, HALF, -HALF, HALF];
   const NPIX = 512;
-  const SNE_FADE = 3;
+  // Number of frames over which an SN dot fades out. Overridden from
+  // meta.json.fade during loadSne() so it tracks the export's SNE_FADE.
+  let SNE_FADE = 3;
   const MAIN_PX = 600, ZOOM_PX = 520;
   // Each background ID maps to a frames subdirectory under site/.
-  const BG_DIRS = { gas: 'frames', j77: 'frames_j77' };
+  // Populated dynamically from meta.json.backgrounds during bootstrap.
+  let BG_DIRS = {};
+  let BG_LABELS = {};
   let bgId = 'gas';
   const FRAME_FMT = (dir, n) => dir + '/frame_' + String(n).padStart(3, '0') + '.png';
 
@@ -110,33 +122,49 @@
   const frameLabel = document.getElementById('frameLabel');
   const playBtn = document.getElementById('play');
   const corotateBox = document.getElementById('corotate');
+  const rotateBox = document.getElementById('rotate');
   const zoomLabel = document.getElementById('zoomLabel');
   const status = document.getElementById('status');
 
   let fmin = 20, fmax = 519;
   let frameIdx = fmin;
+  // Optional slot -> true snapshot number map (for decimated/strided exports).
+  // When present, the on-disk frames are contiguous slots and this gives the
+  // real snapshot number to display for each slot.
+  let frameNumbers = null;
+  const frameLabelText = (idx) =>
+    String(frameNumbers ? frameNumbers[idx - fmin] : idx).padStart(3, '0');
   let rect = { x0: -14, y0: -5, x1: -10, y1: -1 };  // kpc
   // Flat per-frame data sliced via offsets: sneXs/Ys are float32, sneAges is uint8.
   // For frame f, rows are [offsets[f-fmin] .. offsets[f-fmin+1]).
   let sneXs = null, sneYs = null, sneAges = null, sneOffsets = null;
-  // Per-background image caches: { gas: {idx: Image}, j77: {idx: Image} }.
-  let frameCaches = { gas: {}, j77: {} };
-  let loadedCounts = { gas: 0, j77: 0 };
-  let frames = frameCaches[bgId];
+  // Per-background image caches: { <bgId>: {idx: Image}, ... }. Populated after meta load.
+  let frameCaches = {};
+  let loadedCounts = {};
+  let frames = {};
 
+  // Spinner overlay covers the figure only until this many frames of the active
+  // background are decoded; after that the figure is interactive and remaining
+  // frames stream in behind a small progress bar.
+  const INITIAL_FRAMES = 50;
   const loadingEl = document.getElementById('loading');
-  const loadingText = document.getElementById('loadingText');
-  const loadingBar = document.getElementById('loadingBar');
+  const miniEl = document.getElementById('miniProgress');
+  const miniText = document.getElementById('miniBarText');
+  const miniFill = document.getElementById('miniBarFill');
   function updateLoadingUI() {
     const total = fmax - fmin + 1;
     const n = loadedCounts[bgId] || 0;
+    const initialTarget = Math.min(INITIAL_FRAMES, total);
+    // Full spinner overlay: only during the initial burst.
+    loadingEl.classList.toggle('hidden', n >= initialTarget);
+    // Small progress bar: visible until the active background is fully loaded.
     if (n >= total) {
-      loadingEl.classList.add('hidden');
+      miniEl.classList.add('hidden');
     } else {
-      loadingEl.classList.remove('hidden');
-      const label = bgId === 'j77' ? '7.7 μm emission' : 'gas density';
-      loadingText.textContent = `loading ${label} frames… ${n}/${total}`;
-      loadingBar.style.width = (100 * n / total).toFixed(1) + '%';
+      miniEl.classList.remove('hidden');
+      const label = BG_LABELS[bgId] || bgId;
+      miniText.textContent = `loading ${label} ${n}/${total}`;
+      miniFill.style.width = (100 * n / total).toFixed(1) + '%';
     }
   }
   let playing = false;
@@ -153,13 +181,54 @@
   const mainXToKpc = (px) => EXTENT[0] + (px / MAIN_PX) * FOV;
   const mainYToKpc = (py) => EXTENT[3] - (py / MAIN_PX) * FOV;
 
-  // Zoom canvas: kpc -> px given current rect.
-  const zoomKpcToX = (x) => ((x - rect.x0) / (rect.x1 - rect.x0)) * ZOOM_PX;
-  const zoomKpcToY = (y) => ((rect.y1 - y) / (rect.y1 - rect.y0)) * ZOOM_PX;
-
   // Source image pixel coords for ctx.drawImage cropping.
   const kpcToSrcX = (x) => ((x - EXTENT[0]) / FOV) * NPIX;
   const kpcToSrcY = (y) => ((EXTENT[3] - y) / FOV) * NPIX;
+
+  // ---- zoom transform --------------------------------------------------------
+  // Maps the inset square (kpc) into the square zoom canvas. With "aim inset at
+  // center" off, alpha=0 and this is the plain axis-aligned crop. With it on,
+  // the content is rotated so the panel's BOTTOM edge points toward the galaxy
+  // center (0,0): the inset square is tilted in the main view to match.
+  // Cached each render() into curXform; recomputed on demand for the cursor.
+  let curXform = null;
+  function computeXform() {
+    const cx = (rect.x0 + rect.x1) / 2;
+    const cy = (rect.y0 + rect.y1) / 2;
+    const w = Math.abs(rect.x1 - rect.x0);          // inset side (kpc, square)
+    const sideSrc = (w / FOV) * NPIX;               // ...in source px
+    const scale = sideSrc > 0 ? ZOOM_PX / sideSrc : 1;
+    const scx = kpcToSrcX(cx), scy = kpcToSrcY(cy); // inset center in source px
+    // Default-zoom "down" = south; we want "down" to point toward center.
+    const alpha = rotateBox.checked
+      ? (Math.PI / 2 - Math.atan2(cy, -cx)) : 0;
+    return { cx, cy, scale, scx, scy, alpha,
+             cos: Math.cos(alpha), sin: Math.sin(alpha) };
+  }
+  // kpc -> zoom-canvas px under transform t (rotation [c -s; s c]).
+  function kpcToZoomPx(x, y, t) {
+    const X = (kpcToSrcX(x) - t.scx) * t.scale;
+    const Y = (kpcToSrcY(y) - t.scy) * t.scale;
+    return { px: X * t.cos - Y * t.sin + ZOOM_PX / 2,
+             py: X * t.sin + Y * t.cos + ZOOM_PX / 2 };
+  }
+  // zoom-canvas px -> kpc (inverse of the above; rotation transpose [c s; -s c]).
+  function zoomPxToKpc(px, py, t) {
+    const rx = px - ZOOM_PX / 2, ry = py - ZOOM_PX / 2;
+    const X = (rx * t.cos + ry * t.sin) / t.scale + t.scx;
+    const Y = (-rx * t.sin + ry * t.cos) / t.scale + t.scy;
+    return { x: EXTENT[0] + (X / NPIX) * FOV,
+             y: EXTENT[3] - (Y / NPIX) * FOV };
+  }
+  // Main-canvas px -> inset-local px (origin at inset center, axes aligned with
+  // the tilted square). The main view draws the inset rotated by -alpha, so we
+  // undo it with +alpha here. Reduces to a plain offset when alpha=0. Used for
+  // hit-testing so the resize handles track the displayed square.
+  function toLocalPx(px, py, t) {
+    const dx = px - kpcToMainX(t.cx);
+    const dy = py - kpcToMainY(t.cy);
+    return { lx: dx * t.cos - dy * t.sin, ly: dx * t.sin + dy * t.cos };
+  }
 
   // ---- frame loading ---------------------------------------------------------
   function preloadFrames(which) {
@@ -255,9 +324,32 @@
     try {
       const meta = await (await fetch('meta.json')).json();
       fmin = meta.fmin; fmax = meta.fmax;
+      if (meta.fade > 0) SNE_FADE = meta.fade;
+      frameNumbers = (meta.frame_numbers && meta.frame_numbers.length)
+        ? meta.frame_numbers : null;
       slider.min = fmin; slider.max = fmax; slider.value = fmin;
       frameIdx = fmin;
-      frameLabel.textContent = String(fmin).padStart(3, '0');
+      frameLabel.textContent = frameLabelText(fmin);
+
+      // Build background registry + populate dropdown from meta.
+      const bgs = (meta.backgrounds && meta.backgrounds.length)
+        ? meta.backgrounds
+        : [{ id: 'gas', label: 'Gas column density', frames_dir: 'frames' }];
+      BG_DIRS = {}; BG_LABELS = {};
+      frameCaches = {}; loadedCounts = {};
+      bgSelect.innerHTML = '';
+      for (const b of bgs) {
+        BG_DIRS[b.id] = b.frames_dir;
+        BG_LABELS[b.id] = b.label;
+        frameCaches[b.id] = {};
+        loadedCounts[b.id] = 0;
+        const opt = document.createElement('option');
+        opt.value = b.id; opt.textContent = b.label;
+        bgSelect.appendChild(opt);
+      }
+      if (!BG_DIRS[bgId]) bgId = bgs[0].id;
+      bgSelect.value = bgId;
+      frames = frameCaches[bgId];
 
       const [xb, yb, ab, ob] = await Promise.all([
         fetch(meta.files.x).then(r => r.arrayBuffer()),
@@ -276,60 +368,61 @@
   }
 
   // ---- rendering -------------------------------------------------------------
-  function drawSneZoom() {
+  function drawSneZoom(t) {
     if (!sneOffsets) return;
     const i0 = sneOffsets[frameIdx - fmin];
     const i1 = sneOffsets[frameIdx - fmin + 1];
-    const xlo = Math.min(rect.x0, rect.x1);
-    const xhi = Math.max(rect.x0, rect.x1);
-    const ylo = Math.min(rect.y0, rect.y1);
-    const yhi = Math.max(rect.y0, rect.y1);
     for (let i = i0; i < i1; i++) {
-      const x = sneXs[i], y = sneYs[i];
-      if (x < xlo || x > xhi || y < ylo || y > yhi) continue;
+      const p = kpcToZoomPx(sneXs[i], sneYs[i], t);
+      if (p.px < 0 || p.px > ZOOM_PX || p.py < 0 || p.py > ZOOM_PX) continue;
       const age = sneAges[i];
       const a = (SNE_FADE - age) / SNE_FADE;
       zoomCtx.fillStyle = `rgba(255,221,51,${a.toFixed(3)})`;
       zoomCtx.beginPath();
-      zoomCtx.arc(zoomKpcToX(x), zoomKpcToY(y), 3, 0, Math.PI * 2);
+      zoomCtx.arc(p.px, p.py, 3, 0, Math.PI * 2);
       zoomCtx.fill();
     }
   }
 
-  function drawRect() {
-    const x = kpcToMainX(Math.min(rect.x0, rect.x1));
-    const y = kpcToMainY(Math.max(rect.y0, rect.y1));
-    const w = Math.abs(kpcToMainX(rect.x1) - kpcToMainX(rect.x0));
-    const h = Math.abs(kpcToMainY(rect.y0) - kpcToMainY(rect.y1));
+  // Inset outline on the main canvas, tilted by -alpha so its bottom edge
+  // (= zoom panel bottom) faces the galaxy center when "aim inset" is on.
+  function drawRect(t) {
+    const wp = (Math.abs(rect.x1 - rect.x0) / FOV) * MAIN_PX;
+    const hp = (Math.abs(rect.y1 - rect.y0) / FOV) * MAIN_PX;
+    mainCtx.save();
+    mainCtx.translate(kpcToMainX(t.cx), kpcToMainY(t.cy));
+    mainCtx.rotate(-t.alpha);
     mainCtx.strokeStyle = '#ffffff';
     mainCtx.lineWidth = 2;
-    mainCtx.strokeRect(x, y, w, h);
+    mainCtx.strokeRect(-wp / 2, -hp / 2, wp, hp);
+    mainCtx.restore();
   }
 
   function render() {
     const img = frames[frameIdx];
+    const t = curXform = computeXform();
     mainCtx.fillStyle = '#000';
     mainCtx.fillRect(0, 0, MAIN_PX, MAIN_PX);
     if (img && img.complete && img.naturalWidth > 0) {
       mainCtx.drawImage(img, 0, 0, MAIN_PX, MAIN_PX);
     }
-    drawRect();
+    drawRect(t);
 
-    // Zoom: crop the source image to the rectangle.
+    // Zoom: map the inset square into the panel (rotated when "aim inset" is on).
     zoomCtx.fillStyle = '#000';
     zoomCtx.fillRect(0, 0, ZOOM_PX, ZOOM_PX);
     if (img && img.complete && img.naturalWidth > 0) {
-      const sx = kpcToSrcX(Math.min(rect.x0, rect.x1));
-      const sy = kpcToSrcY(Math.max(rect.y0, rect.y1));
-      const sw = Math.abs(kpcToSrcX(rect.x1) - kpcToSrcX(rect.x0));
-      const sh = Math.abs(kpcToSrcY(rect.y0) - kpcToSrcY(rect.y1));
-      if (sw > 0 && sh > 0) {
-        zoomCtx.drawImage(img, sx, sy, sw, sh, 0, 0, ZOOM_PX, ZOOM_PX);
-      }
+      zoomCtx.save();
+      zoomCtx.translate(ZOOM_PX / 2, ZOOM_PX / 2);
+      zoomCtx.rotate(t.alpha);
+      zoomCtx.scale(t.scale, t.scale);
+      zoomCtx.translate(-t.scx, -t.scy);
+      zoomCtx.drawImage(img, 0, 0);
+      zoomCtx.restore();
     }
-    drawSneZoom();
+    drawSneZoom(t);
 
-    frameLabel.textContent = String(frameIdx).padStart(3, '0');
+    frameLabel.textContent = frameLabelText(frameIdx);
     zoomLabel.textContent = `Zoom (${rect.x0.toFixed(1)}, ${rect.y0.toFixed(1)}) → (${rect.x1.toFixed(1)}, ${rect.y1.toFixed(1)}) kpc`;
   }
 
@@ -338,23 +431,18 @@
   // Larger hit region on touch devices where fingers are less precise.
   const HANDLE_PX = window.matchMedia('(pointer: coarse)').matches ? 24 : 10;
 
-  function rectCornersPx() {
-    return {
-      x0: kpcToMainX(Math.min(rect.x0, rect.x1)),
-      x1: kpcToMainX(Math.max(rect.x0, rect.x1)),
-      y0: kpcToMainY(Math.max(rect.y0, rect.y1)),
-      y1: kpcToMainY(Math.min(rect.y0, rect.y1)),
-    };
-  }
-
   function hitTest(px, py) {
-    const r = rectCornersPx();
-    const near = (a, b) => Math.abs(a - b) < HANDLE_PX;
-    const inX = px > r.x0 - HANDLE_PX && px < r.x1 + HANDLE_PX;
-    const inY = py > r.y0 - HANDLE_PX && py < r.y1 + HANDLE_PX;
-    if (!inX || !inY) return null;
-    const left = near(px, r.x0), right = near(px, r.x1);
-    const top = near(py, r.y0), bot = near(py, r.y1);
+    // Test in the inset's local frame so handles follow the displayed square
+    // even when it is tilted (alpha != 0).
+    const t = curXform || computeXform();
+    const { lx, ly } = toLocalPx(px, py, t);
+    const half = (Math.abs(rect.x1 - rect.x0) / FOV) * MAIN_PX / 2;
+    const ax = Math.abs(lx), ay = Math.abs(ly);
+    if (ax > half + HANDLE_PX || ay > half + HANDLE_PX) return null;
+    const onV = Math.abs(ax - half) < HANDLE_PX;   // near a vertical (left/right) edge
+    const onH = Math.abs(ay - half) < HANDLE_PX;   // near a horizontal (top/bottom) edge
+    const left = onV && lx < 0, right = onV && lx > 0;
+    const top  = onH && ly < 0, bot   = onH && ly > 0;
     if (top && left) return 'nw';
     if (top && right) return 'ne';
     if (bot && left) return 'sw';
@@ -363,7 +451,7 @@
     if (bot) return 's';
     if (left) return 'w';
     if (right) return 'e';
-    if (px > r.x0 && px < r.x1 && py > r.y0 && py < r.y1) return 'move';
+    if (ax < half && ay < half) return 'move';
     return null;
   }
 
@@ -377,39 +465,6 @@
   }
 
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
-
-  // Force the rectangle to be square by adjusting the edge(s) being resized.
-  // `mode` is the drag mode (e.g. 'nw', 'e'); `anchor` is the fixed corner/edge.
-  function squarify(r, mode) {
-    const w = Math.abs(r.x1 - r.x0);
-    const h = Math.abs(r.y1 - r.y0);
-    let s = Math.max(w, h);
-    s = Math.max(s, 1.0);
-    s = Math.min(s, FOV);
-    // Anchor depends on which edge is being dragged: keep the opposite edge fixed.
-    const ax = mode.includes('w') ? r.x1 : r.x0;
-    const ay = mode.includes('s') ? r.y1 : r.y0;
-    const sxSign = mode.includes('w') ? -1 : 1;
-    const sySign = mode.includes('s') ? -1 : 1;
-    let nx0 = mode.includes('w') ? ax + sxSign * s : ax;
-    let nx1 = mode.includes('w') ? ax : ax + sxSign * s;
-    let ny0 = mode.includes('s') ? ay + sySign * s : ay;
-    let ny1 = mode.includes('s') ? ay : ay + sySign * s;
-    // For pure horizontal/vertical edge drags, mirror the other axis around its midpoint.
-    if (mode === 'e' || mode === 'w') {
-      const cy = (r.y0 + r.y1) / 2;
-      ny0 = cy - s / 2; ny1 = cy + s / 2;
-    } else if (mode === 'n' || mode === 's') {
-      const cx = (r.x0 + r.x1) / 2;
-      nx0 = cx - s / 2; nx1 = cx + s / 2;
-    }
-    // Clamp into the FOV; if it overflows, shift back inside.
-    if (nx0 < EXTENT[0]) { const d = EXTENT[0] - nx0; nx0 += d; nx1 += d; }
-    if (nx1 > EXTENT[1]) { const d = nx1 - EXTENT[1]; nx0 -= d; nx1 -= d; }
-    if (ny0 < EXTENT[2]) { const d = EXTENT[2] - ny0; ny0 += d; ny1 += d; }
-    if (ny1 > EXTENT[3]) { const d = ny1 - EXTENT[3]; ny0 -= d; ny1 -= d; }
-    return { x0: nx0, y0: ny0, x1: nx1, y1: ny1 };
-  }
 
   // Convert a pointer event's client coordinates to logical canvas pixels,
   // since CSS may scale the canvas to fit the viewport.
@@ -441,12 +496,22 @@
       if (ny1 > EXTENT[3]) { ny1 = EXTENT[3]; ny0 = ny1 - h; }
       rect = { x0: nx0, y0: ny0, x1: nx1, y1: ny1 };
     } else {
-      let { x0, y0, x1, y1 } = s.r;
-      if (drag.mode.includes('w')) x0 = x;
-      if (drag.mode.includes('e')) x1 = x;
-      if (drag.mode.includes('n')) y1 = y;  // n = top in canvas px = larger y in kpc
-      if (drag.mode.includes('s')) y0 = y;
-      rect = squarify({ x0, y0, x1, y1 }, drag.mode);
+      // Symmetric resize about the (fixed) center, measured in the inset's local
+      // frame so it behaves identically whether or not the inset is rotated.
+      const t = curXform || computeXform();
+      const { lx, ly } = toLocalPx(px, py, t);
+      let halfPx;
+      if (drag.mode === 'e' || drag.mode === 'w') halfPx = Math.abs(lx);
+      else if (drag.mode === 'n' || drag.mode === 's') halfPx = Math.abs(ly);
+      else halfPx = Math.max(Math.abs(lx), Math.abs(ly));
+      let side = (2 * halfPx / MAIN_PX) * FOV;          // kpc
+      const cx = (rect.x0 + rect.x1) / 2, cy = (rect.y0 + rect.y1) / 2;
+      // Keep the axis-aligned square inside the FOV without moving the center.
+      const maxHalf = Math.min(EXTENT[1] - cx, cx - EXTENT[0],
+                               EXTENT[3] - cy, cy - EXTENT[2]);
+      side = clamp(side, 1.0, Math.max(1.0, 2 * maxHalf));
+      const h = side / 2;
+      rect = { x0: cx - h, y0: cy - h, x1: cx + h, y1: cy + h };
     }
     render();
   });
@@ -472,8 +537,7 @@
   const zoomCoord = document.getElementById('zoomCoord');
   zoomCv.addEventListener('pointermove', (e) => {
     const { px, py } = canvasPx(zoomCv, e);
-    const x = rect.x0 + (px / ZOOM_PX) * (rect.x1 - rect.x0);
-    const y = rect.y1 - (py / ZOOM_PX) * (rect.y1 - rect.y0);
+    const { x, y } = zoomPxToKpc(px, py, curXform || computeXform());
     zoomCoord.textContent = `(${x.toFixed(2)}, ${y.toFixed(2)}) kpc`;
     zoomCoord.classList.add('visible');
   });
@@ -495,22 +559,41 @@
     setFrame(parseInt(slider.value, 10));
   });
 
+  const speedSlider = document.getElementById('speed');
+  const speedLabel = document.getElementById('speedLabel');
+  let fps = parseInt(speedSlider.value, 10) || 5;
+  speedLabel.textContent = fps + ' fps';
+
+  function startPlayTimer() {
+    if (playTimer) clearInterval(playTimer);
+    playTimer = setInterval(() => {
+      const next = frameIdx >= fmax ? fmin : frameIdx + 1;
+      slider.value = next;
+      setFrame(next);
+    }, 1000 / fps);
+  }
+
   playBtn.addEventListener('click', () => {
     playing = !playing;
     playBtn.textContent = playing ? 'Pause' : 'Play';
     if (playing) {
-      playTimer = setInterval(() => {
-        const next = frameIdx >= fmax ? fmin : frameIdx + 1;
-        slider.value = next;
-        setFrame(next);
-      }, 200);
+      startPlayTimer();
     } else if (playTimer) {
       clearInterval(playTimer); playTimer = null;
     }
   });
 
+  speedSlider.addEventListener('input', () => {
+    fps = parseInt(speedSlider.value, 10) || 1;
+    speedLabel.textContent = fps + ' fps';
+    if (playing) startPlayTimer();  // apply new speed without interrupting playback
+  });
+
   // Toggling co-rotation should not retroactively rotate; reset the anchor.
   corotateBox.addEventListener('change', () => { lastFrame = frameIdx; });
+
+  // Toggling "aim inset at center" re-renders with/without the rotation.
+  rotateBox.addEventListener('change', render);
 
   const bgSelect = document.getElementById('background');
   bgSelect.addEventListener('change', () => {
@@ -526,7 +609,7 @@
     await Promise.all([loadSne(), loadRotation()]);
     lastFrame = frameIdx;
     preloadFrames(bgId);
-    // Lazy preload the other background after the active one is queued.
+    // Lazy preload any other backgrounds after the active one is queued.
     for (const id of Object.keys(BG_DIRS)) {
       if (id !== bgId) preloadFrames(id);
     }
