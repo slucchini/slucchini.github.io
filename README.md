@@ -185,6 +185,13 @@ layer is still loading never transitions from the meaningless init pose.
   - Default camera is the **y–z projection**: `pos [2.27, 0, 0]` (+x axis, z up, y right),
     `zoom: 1.45`. All snapshots preload in the background (`"preload"` events →
     "preloading n/17" under the scrubber).
+  - **Scrubber direction** (`TimeBar`, reversed 2026-08-21): the slider reads
+    left-to-right in time — position 0 is the earliest snapshot (t ≈ −1.54 Gyr) and the
+    far right is **t = 0**, so slider position *is* the snapshot index passed to
+    `setSnapshot`. The state variable `v` still counts snapshots *back* from the present
+    (`v = 0` → t = 0) and is deliberately left that way: `TimeBar` mounts before
+    `timeline` loads, so it cannot seed its initial state from `n`, and `useState(0)`
+    keeps it opening at the present without an extra effect.
 - **cgm** (the "ENGAWA" page) — interactive `VolumeLayer`. Has a **Species** picker
   (`field`/`fields`: Total gas, H I, Mg II, O VI — each with its own colormap and color-scale
   `cbLo`/`cbHi` defaults, applied on switch) and a **Zoom** slider (`controlsUI:
@@ -274,8 +281,8 @@ layer is still loading never transitions from the meaningless init pose.
   - **Movie scrubber** (`MovieScrub` in `app.js`, rendered with any `movie:` area):
     bottom-center slider seeks the video (pauses while dragging, resumes on release),
     with a play/pause button, a ½×/1× `playbackRate` toggle (30 fps source → 15/30 fps
-    effective, **½× default** — no re-encode needed) and a frame counter matching the
-    SNe frame numbering.
+    effective, **1× default** since 2026-08-21 — no re-encode needed) and a frame counter
+    matching the SNe frame numbering. ½× is there for reading the SNe lens.
 
 **Camera azimuth rule.** All three volume areas sit at azimuth **−90°** (the `x=0, −y`
 half-plane): home `[0,-0.38,0.24]`, cgm `[0,-1.1,0]`, ism `[0,-0.02,-0.95]`. Transitions

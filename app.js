@@ -547,12 +547,12 @@ function HeroMovie({ area }) {
 // speed) stay reflected and the SNe lens — which also reads currentTime —
 // needs no coupling. Dragging pauses the video and resumes on release if it
 // was playing. Speed uses video.playbackRate (30 fps source, so ½× ≈ 15 fps);
-// no re-encode needed.
+// no re-encode needed. Defaults to 1×; ½× is there for reading the SNe lens.
 function MovieScrub({ videoRef, active }) {
   const sliderRef = useRef(null);
   const labelRef = useRef(null);
   const drag = useRef({ on: false, wasPlaying: false });
-  const [rate, setRate] = useState(0.5);   // ½× default (15 fps effective)
+  const [rate, setRate] = useState(1);     // 1× default (the source's own 30 fps)
   const [playing, setPlaying] = useState(false);
   useEffect(() => {
     const v = videoRef.current;
@@ -998,7 +998,14 @@ function ComponentToggles() {
   }, "Orbits")));
 }
 
-// Magellanic: snapshot time scrubber (value 0 = most recent snapshot)
+// Magellanic: snapshot time scrubber. `v` counts snapshots *back* from the
+// present, so v = 0 is the most recent one (t = 0 Gyr) — that stays the initial
+// state, which matters because the component mounts before `timeline` loads and
+// so can't seed itself from `n`.
+// The slider runs the other way round: position 0 (left) is the earliest
+// snapshot and position n-1 (right) is t = 0, i.e. time reads left-to-right and
+// the handle ends at the present. Slider position therefore *is* the snapshot
+// index, so it's what gets passed to setSnapshot.
 function TimeBar({ timeline, preload }) {
   const snaps = timeline && timeline.snapshots;
   const [v, setV] = useState(0);
@@ -1007,14 +1014,14 @@ function TimeBar({ timeline, preload }) {
   const t0 = snaps[n - 1].time_gyr;
   const snapIdx = (n - 1) - v;
   const dt = snaps[snapIdx].time_gyr - t0;
-  const onChange = e => { const nv = parseInt(e.target.value, 10); setV(nv); callViz("setSnapshot", (n - 1) - nv); };
-  const frac = n > 1 ? v / (n - 1) : 0;
+  const onChange = e => { const pos = parseInt(e.target.value, 10); setV((n - 1) - pos); callViz("setSnapshot", pos); };
+  const frac = n > 1 ? snapIdx / (n - 1) : 0;
   // keep the label centered under the 14px thumb across the track
   const labelLeft = `calc(${frac} * (100% - 14px) + 7px)`;
   return /*#__PURE__*/React.createElement("div", {
     className: "viz-timebar"
   }, /*#__PURE__*/React.createElement("input", {
-    type: "range", className: "time-slider", min: "0", max: String(n - 1), step: "1", value: v, onChange: onChange
+    type: "range", className: "time-slider", min: "0", max: String(n - 1), step: "1", value: snapIdx, onChange: onChange
   }), /*#__PURE__*/React.createElement("div", {
     className: "time-label-track"
   }, /*#__PURE__*/React.createElement("div", {
