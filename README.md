@@ -507,6 +507,35 @@ Use the one-liner in the white-background bullet above.
 Paper **titles and citations are the real published ones** (verified against the arXiv
 API, `au:"Scott Lucchini"` — note `au:"Lucchini_S"` returns nothing), not paraphrases.
 
+## Favicon
+
+Source of truth is `assets/icon.jpg` (1280², an illustrated spiral galaxy). Shipped as a
+**raster set, not an SVG** — it's an illustration, so there's nothing sensible to vectorise:
+`favicon-16.png`, `favicon-32.png`, `favicon-48.png`, `apple-touch-icon.png` (180²), linked
+from `index.html` and (root-relative, since it sits a directory down) `engawa/index.html`.
+
+Two things the source needs before it can be an icon, both easy to get wrong:
+
+- **The white background has to be cut out.** The JPEG has no alpha and the disc sits on
+  white, which shows as a white square around the circle on a dark browser tab. The disc
+  measures centre (639.5, 641.0), radius ≈ 561; crop square to that, then mask to a circle
+  with the edge pulled in ~2 px so no white rim survives the resample. Sanity-check by
+  averaging the pixels just inside the rim — they should come out dark blue (≈ 59, 68, 120),
+  not white.
+- **The small sizes are cropped in progressively** ("optical scaling"). Shrinking the whole
+  disc to 16 px gives a dot with an orange speck, and the dark navy rim vanishes against a
+  dark tab. Crop to a fraction of the disc radius instead: **0.60 at 16 px, 0.72 at 32 px,
+  0.85 at 48 px**, full disc for the 180 px apple-touch icon (which also needs an *opaque*
+  full-bleed square — `#090e19` — because iOS applies its own mask). Each size also gets a
+  light unsharp pass and ~1.2× saturation, since downsampling flattens both.
+
+Accept that at 16 px this reads as a coloured swirl rather than a legible galaxy — that's
+inherent to a detailed illustration at that size, and no crop fixes it.
+
+**If you ever add an SVG icon back, remove these PNG links or the SVG will win** — browsers
+prefer `type="image/svg+xml"` when both are listed, so a stale `favicon.svg` silently
+overrides the whole raster set.
+
 ## Regenerating the volume viz assets from HDF5
 
 The header volume is a raw `uint8` 3D grid (`.bin`) + a `.meta.json`, generated from
