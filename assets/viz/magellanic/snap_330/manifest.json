@@ -1,0 +1,66 @@
+{
+  "units": {
+    "length": "kpc",
+    "density": "code_mass_per_kpc3"
+  },
+  "center_original_kpc": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "box_half_width_kpc": 500.0,
+  "components": [
+    {
+      "key": "mw",
+      "name": "MW CGM",
+      "color": "#4da6ff",
+      "glb": "mw.glb",
+      "shells": [
+        {
+          "node": "mw_L0",
+          "level": 2e-08,
+          "faces": 53068,
+          "opacity": 0.1
+        },
+        {
+          "node": "mw_L1",
+          "level": 5e-08,
+          "faces": 32472,
+          "opacity": 0.2
+        }
+      ]
+    },
+    {
+      "key": "lmc",
+      "name": "LMC CGM",
+      "color": "#ff8c3a",
+      "glb": "lmc.glb",
+      "shells": [
+        {
+          "node": "lmc_L0",
+          "level": 5e-09,
+          "faces": 46218,
+          "opacity": 0.1
+        },
+        {
+          "node": "lmc_L1",
+          "level": 1.5e-08,
+          "faces": 17164,
+          "opacity": 0.2
+        }
+      ]
+    }
+  ],
+  "bounds_kpc": {
+    "min": [
+      -144.93234252929688,
+      -125.70361328125,
+      -198.7242431640625
+    ],
+    "max": [
+      192.83160400390625,
+      231.9608154296875,
+      144.389892578125
+    ]
+  }
+}

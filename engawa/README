@@ -1,0 +1,140 @@
+================================================================================
+ENGAWA — ENhanced Galactic Atmospheres With Arepo
+Public data release
+================================================================================
+
+A suite of cosmological zoom-in simulations that resolves the circumgalactic
+medium (CGM) of four Milky Way-like galaxies down to 200 pc, using fixed-volume
+mesh refinement in Arepo together with the IllustrisTNG feedback model. The
+refinement caps the physical size of gas cells throughout the CGM rather than
+tracking mass, holding 200 pc resolution from the disk out to 100 kpc. Stellar
+ionizing radiation is added in post-processing with the COLT radiative-transfer
+code.
+
+  Website   https://www.scottlucchini.com/engawa/
+            (overview, galaxy and resolution tables, figures, access guide)
+
+  Paper     Lucchini, Abramson, Hummels, Conroy, Hernquist & Smith (2026),
+            submitted to ApJ.  arXiv:2603.05584
+
+  Contact   Scott Lucchini <scott.lucchini@cfa.harvard.edu>
+
+
+--------------------------------------------------------------------------------
+THE GALAXIES  (z = 0 properties)
+--------------------------------------------------------------------------------
+
+  Dir     Origin           M*          M200         R200     Finest run
+                           (1e10 Msun) (1e12 Msun)  (kpc)
+  ------  ---------------  ----------  -----------  -------  ----------
+  Au6     Auriga halo 6           4.8         1.04      214     200 pc
+  Au8     Auriga halo 8           3.0         1.08      216     500 pc
+  TNGA    TNG50 subhalo           5.2         1.02      212     200 pc
+          (537941)
+  TNGB    TNG50 subhalo           9.2         1.39      236     500 pc
+          (519311)
+
+Auriga masses are from Grand et al. (2017); TNG values are from the public halo
+catalog. The galaxies themselves are consistent between resolution levels —
+stellar masses agree to within 4% at z = 0.
+
+
+--------------------------------------------------------------------------------
+RESOLUTION LEVELS
+--------------------------------------------------------------------------------
+
+  Run       Refinement        V_target (kpc^3)   Spatial resolution
+  --------  ----------------  ----------------   ------------------
+  Default   Mass-based only   —                  TNG50-1 fiducial
+  1kpc      + fixed volume    1.0                1 kpc
+  500pc     + fixed volume    0.125              500 pc
+  200pc     + fixed volume    0.015              200 pc  (Au6, TNGA only)
+
+The target volume is applied inside a comoving radius R_ri = 100 ckpc and tapers
+to the default scheme by R_ro = 200 ckpc; inside 0.15 R200 the disk/ISM stays at
+the fiducial TNG50-1 resolution. Refinement is switched on at z = 0.3 and run for
+3.4 Gyr to z = 0.
+
+
+--------------------------------------------------------------------------------
+DIRECTORY LAYOUT
+--------------------------------------------------------------------------------
+
+Note that Au6 nests each run under its own output/, while the other three fold
+the run into the directory name.
+
+  /
+  |-- Au6/
+  |   |-- Default/output/
+  |   |   |-- allclouds/               cloud catalog (Au6 only)
+  |   |   |-- colt/                    COLT outputs, colt_NNN.hdf5
+  |   |   |-- fof_subhalo_tab_NNN.hdf5 Subfind catalog (Default runs only)
+  |   |   |-- fof_tab_NNN.hdf5         FOF catalog
+  |   |   |-- snap_NNN.hdf5            snapshot
+  |   |   `-- cpu.txt, energy.txt, ... Arepo run logs
+  |   |-- 1kpc/output/
+  |   |-- 500pc/output/                (also has output_rerun/)
+  |   `-- 200pc/output/
+  |-- Au8/
+  |   |-- output_default/
+  |   |-- output_1kpc/
+  |   `-- output_500pc/
+  |-- TNGA/
+  |   |-- output_default/
+  |   |-- output_1kpc/
+  |   |-- output_500pc/
+  |   `-- output/                      (the 200 pc run)
+  `-- TNGB/
+      |-- output_default/
+      |-- output_1kpc/
+      `-- output_500pc/
+
+Every run directory follows the same pattern as the expanded one above. In the
+Default runs each snapshot and catalog is a single file; in the refined runs they
+are split across 64 files, held in snapdir_NNN/ and groups_NNN/ directories
+instead. Subfind catalogs are present for the Default runs. Au6's COLT files are
+split by escape fraction (e.g. colt_139_25fesc.hdf5).
+
+
+--------------------------------------------------------------------------------
+SNAPSHOT NUMBERING
+--------------------------------------------------------------------------------
+
+All Default runs contain 140 snapshots following output_list_default.txt (every
+50 Myr at late times). The 1 kpc and 200 pc runs use the same spacing and run
+from 069-139. The 500 pc runs add snapshots every 10 Myr and run from 069-422.
+
+
+--------------------------------------------------------------------------------
+UNITS AND FIELDS
+--------------------------------------------------------------------------------
+
+Snapshots and group catalogs follow the IllustrisTNG conventions — the same
+field names, unit system (comoving, h-scaled code units), and header layout. See
+the TNG data specification for the full description:
+
+  https://www.tng-project.org/data/docs/specifications/
+
+
+--------------------------------------------------------------------------------
+CITING
+--------------------------------------------------------------------------------
+
+If you use these simulations, please cite the ENGAWA paper:
+
+  @article{Lucchini2026_ENGAWA,
+    author  = {Lucchini, S. and Abramson, C. and Hummels, C. and
+               Conroy, C. and Hernquist, L. and Smith, A.},
+    title   = {{ENhanced Galactic Atmospheres With Arepo:
+               Resolving the CGM at 200 pc with the ENGAWA Simulations}},
+    journal = {submitted to ApJ},
+    year    = {2026},
+    eprint  = {2603.05584},
+    archivePrefix = {arXiv}
+  }
+
+Please also acknowledge the Auriga and IllustrisTNG projects, whose initial
+conditions and feedback model this suite builds on:
+
+  Auriga        https://wwwmpa.mpa-garching.mpg.de/auriga/data
+  IllustrisTNG  https://www.tng-project.org

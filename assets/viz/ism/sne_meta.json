@@ -1,0 +1,19 @@
+{
+ "count": 1201095,
+ "extent_kpc": [
+  -15.0,
+  15.0,
+  -15.0,
+  15.0
+ ],
+ "movie_frames": 2480,
+ "fps": 30,
+ "snap0": 21,
+ "fade_snapshots": 10,
+ "rotation_stride": 2,
+ "quant_max": 65535,
+ "files": {
+  "xy": "sne_xy.bin",
+  "offsets": "sne_offsets.bin"
+ }
+}

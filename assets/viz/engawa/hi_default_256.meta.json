@@ -1,0 +1,40 @@
+{
+  "field": "hi",
+  "ion": "HI",
+  "resolution": "Default",
+  "dims": [
+    256,
+    256,
+    256
+  ],
+  "ordering": "x-fastest (x,y,z); index = x + y*nx + z*nx*ny",
+  "half_box": 100.0,
+  "box_units": "kpc",
+  "voxel_size": 0.78125,
+  "log": true,
+  "vmin": -11.322414297834893,
+  "vmax": -1.0007406524075158,
+  "proj_vmin": -8.019004517180663,
+  "proj_vmax": 0.44417226212836236,
+  "colormap": "engawa",
+  "default_axis": "x",
+  "source": "grid_rho_nh_256_Default.h5",
+  "source_snapshot": "/n/holylfs05/LABS/hernquist_lab/Users/slucchini/Arepo/Cosmo/zooms/ENGAWA/Au6/Default/output/snap_139.hdf5",
+  "note": "normalized log10(HI number density, cm^-3); shared range with paired run",
+  "atlas": {
+    "tile": [
+      256,
+      256
+    ],
+    "cols": 16,
+    "slices_per_part": 64,
+    "parts": [
+      "hi_default_256_a0.webp",
+      "hi_default_256_a1.webp",
+      "hi_default_256_a2.webp",
+      "hi_default_256_a3.webp"
+    ],
+    "quality": 85,
+    "note": "grayscale WebP z-slice atlas; R channel = the u8 cube value, values < 2 clamp to 0 (the empty sentinel). Decode with color management disabled."
+  }
+}

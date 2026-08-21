@@ -1,0 +1,39 @@
+{
+  "field": "total_gas",
+  "resolution": "200pc",
+  "dims": [
+    256,
+    256,
+    256
+  ],
+  "ordering": "x-fastest (x,y,z); index = x + y*nx + z*nx*ny",
+  "half_box": 100.0,
+  "box_units": "kpc",
+  "voxel_size": 0.78125,
+  "log": true,
+  "vmin": -4.551725402500279,
+  "vmax": 0.3694776215098531,
+  "proj_vmin": -1.859459807804438,
+  "proj_vmax": 0.8050404969048094,
+  "colormap": "engawa",
+  "default_axis": "x",
+  "source": "grid_rho_256_200pc.h5",
+  "source_snapshot": "/n/holylfs05/LABS/hernquist_lab/Users/slucchini/Arepo/Cosmo/zooms/ENGAWA/Au6/200pc/output/snapdir_139/snap_139.0.hdf5",
+  "note": "normalized log10(number density, cm^-3); shared range with paired run for comparison",
+  "atlas": {
+    "tile": [
+      256,
+      256
+    ],
+    "cols": 16,
+    "slices_per_part": 64,
+    "parts": [
+      "total_gas_200pc_256_a0.webp",
+      "total_gas_200pc_256_a1.webp",
+      "total_gas_200pc_256_a2.webp",
+      "total_gas_200pc_256_a3.webp"
+    ],
+    "quality": 85,
+    "note": "grayscale WebP z-slice atlas; R channel = the u8 cube value, values < 2 clamp to 0 (the empty sentinel). Decode with color management disabled."
+  }
+}

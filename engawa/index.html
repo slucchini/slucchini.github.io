@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ENGAWA — Resolving the CGM at 200 pc · Public Data Release</title>
+  <meta name="description" content="ENGAWA (ENhanced Galactic Atmospheres With Arepo): a public suite of cosmological zoom-in simulations resolving the circumgalactic medium of Milky Way-like galaxies down to 200 pc. Data release, simulations, resolutions, key results, and Globus access." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ─── ENGAWA data-release page. Standalone, but reuses the research site's
+       cosmic-dark palette (oklch tokens), fonts, and CGM cyan accent (hue 220). ─── */
+    :root {
+      --hue: 220;
+      --maxw: 1080px;
+      --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+      --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+      --font-display: "Space Grotesk", system-ui, sans-serif;
+      --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+      --bg:       oklch(0.165 0.024 265);
+      --bg2:      oklch(0.205 0.028 265);
+      --surface:  oklch(0.225 0.030 265);
+      --surface2: oklch(0.255 0.032 265);
+      --line:     oklch(1 0 0 / 0.10);
+      --line2:    oklch(1 0 0 / 0.16);
+      --text:     oklch(0.955 0.010 265);
+      --muted:    oklch(0.74 0.022 265);
+      --faint:    oklch(0.60 0.022 265);
+      --accent:   oklch(0.82 0.135 var(--hue));
+      --accent-d: oklch(0.82 0.135 var(--hue) / 0.16);
+      --accent-b: oklch(0.82 0.135 var(--hue) / 0.42);
+      --glow:     oklch(0.82 0.135 var(--hue) / 0.22);
+
+      /* Eyebrow metrics live here because .two > .aside offsets itself by
+         exactly this much to start level with the <h2> instead of the label. */
+      --eyebrow-size: 12.5px;
+      --eyebrow-lh:   1.6;
+      --eyebrow-gap:  18px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.6;
+      overflow-x: hidden; /* safety net against any stray horizontal overflow */
+    }
+    pre { max-width: 100%; }
+    ::selection { background: var(--accent-b); color: var(--bg); }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code, kbd { font-family: var(--font-mono); }
+
+    /* Gutter matches .topbar above and the main site's .topbar / .content, so the
+       header lines up with the content beneath it on both pages. */
+    .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 clamp(20px, 4vw, 56px); }
+
+    /* ── Topbar ── */
+    .topbar {
+      position: sticky; top: 0; z-index: 40;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 24px; padding: 16px clamp(20px, 4vw, 56px);
+      background: oklch(0.165 0.024 265 / 0.72);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+    /* Type scale mirrors .brand / .tab in the main site's styles.css so the two
+       headers read as one site; both files use the same font stacks. */
+    .brand { display: flex; flex-direction: column; gap: 2px; line-height: 1; }
+    /* the wordmark links home, but it is a wordmark, not prose — no underline
+       and no color shift on hover, as on the main site */
+    .brand a, .brand a:hover { color: var(--text); text-decoration: none; }
+    .brand-name { font-family: var(--font-display); font-weight: 700; font-size: 18.2px; letter-spacing: 0.09em; text-transform: uppercase; }
+    .brand-role { font-family: var(--font-mono); font-size: 13.3px; color: var(--faint); letter-spacing: 0.01em; white-space: nowrap; }
+    /* Nav items carry the same box as .tab on the main site — 9px/15px inside a
+       999px radius, 4px apart — so both headers come out the same height. The
+       pill only shows on hover, as it does there. */
+    .topnav { display: flex; gap: 4px; align-items: center; }
+    .topnav a {
+      display: flex; align-items: center;
+      /* this page sets line-height 1.6 on body; .tab on the main site inherits
+         `normal`, and the difference is what set the two headers' heights apart */
+      color: var(--muted); font-size: 16.4px; font-weight: 500; line-height: normal;
+      padding: 9px 15px; border: 1px solid transparent; border-radius: 999px; white-space: nowrap;
+      transition: color 0.25s var(--ease), background 0.25s var(--ease);
+    }
+    .topnav a:hover { color: var(--text); background: var(--surface); text-decoration: none; }
+    /* The arrow is an SVG rather than a "←" glyph: a text arrow sits on the line
+       box's baseline and drops low wherever the font stack falls back for U+2190,
+       while an icon that is its own flex item is centered by align-items. */
+    .topnav a.back { color: var(--faint); gap: 7px; }
+    .topnav a.back svg { flex: none; display: block; }
+
+    /* ── Hero ── */
+    .hero { position: relative; overflow: hidden; border-bottom: 1px solid var(--line); }
+    .hero-video {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; opacity: 0.82; filter: saturate(1.08) brightness(1.12);
+    }
+    .hero-scrim {
+      position: absolute; inset: 0;
+      /* Keep the video clearly visible while protecting text legibility. The
+         left-to-right gradient darkens only the text column; a soft bottom fade
+         blends into the page background. */
+      background:
+        linear-gradient(90deg, oklch(0.165 0.024 265 / 0.62) 0%, oklch(0.165 0.024 265 / 0.30) 46%, transparent 74%),
+        linear-gradient(180deg, oklch(0.165 0.024 265 / 0.10) 0%, oklch(0.165 0.024 265 / 0.18) 60%, var(--bg) 100%);
+    }
+    /* padding-block, not the padding shorthand: this element is also a .wrap, and
+       the shorthand was resetting that class's horizontal gutter to 0 — which only
+       showed below 1080px, where .wrap stops being centered and the hero content
+       ran flush to the screen edge while every section below it was inset. */
+    .hero-inner { position: relative; z-index: 2; padding-block: clamp(64px, 12vh, 128px) clamp(48px, 8vh, 84px); text-shadow: 0 1px 16px oklch(0.14 0.02 265 / 0.55); }
+    .badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-family: var(--font-mono); font-size: 12px; font-weight: 500; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--accent);
+      padding: 5px 12px; border: 1px solid var(--accent-b); border-radius: 999px;
+      background: var(--accent-d);
+    }
+    .badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+    .hero h1 {
+      font-family: var(--font-display); font-weight: 700;
+      font-size: clamp(48px, 10vw, 104px); letter-spacing: -0.02em; line-height: 0.98;
+      margin: 22px 0 10px;
+    }
+    .hero .expand { font-family: var(--font-display); font-weight: 500; font-size: clamp(17px, 2.6vw, 26px); color: var(--text); letter-spacing: -0.01em; }
+    .hero .expand b { color: var(--accent); font-weight: 600; }
+    .hero .lede { max-width: 62ch; margin-top: 20px; font-size: clamp(15px, 1.7vw, 18px); color: var(--muted); }
+    .hero .authors { margin-top: 18px; font-size: 13.5px; color: var(--faint); }
+    .hero .authors b { color: var(--muted); font-weight: 600; }
+
+    .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 9px;
+      font-weight: 600; font-size: 15px; padding: 12px 20px; border-radius: 10px;
+      border: 1px solid var(--line2); color: var(--text); background: var(--surface);
+      transition: transform .15s var(--ease), border-color .15s var(--ease), background .15s var(--ease);
+    }
+    .btn:hover { text-decoration: none; transform: translateY(-1px); border-color: var(--accent-b); background: var(--surface2); }
+    .btn.primary { background: var(--accent); color: oklch(0.16 0.03 265); border-color: transparent; box-shadow: 0 6px 24px -8px var(--glow); }
+    .btn.primary:hover { background: oklch(0.86 0.14 var(--hue)); }
+    .btn svg { width: 15px; height: 15px; }
+
+    /* ── Sections ── */
+    section.block { padding: clamp(48px, 8vh, 88px) 0; border-bottom: 1px solid var(--line); }
+    .eyebrow {
+      display: flex; align-items: center; gap: 10px;
+      font-family: var(--font-mono); font-size: var(--eyebrow-size); line-height: var(--eyebrow-lh);
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--accent); margin-bottom: var(--eyebrow-gap);
+    }
+    .eyebrow .num { color: var(--faint); }
+    h2 { font-family: var(--font-display); font-weight: 600; font-size: clamp(26px, 4vw, 40px); letter-spacing: -0.015em; line-height: 1.1; margin-bottom: 20px; }
+    h3 { font-family: var(--font-display); font-weight: 600; font-size: 19px; margin-bottom: 8px; letter-spacing: -0.01em; }
+    p.body { font-size: clamp(15px, 1.6vw, 17px); color: var(--muted); max-width: 70ch; margin-bottom: 16px; }
+    p.body b, .body strong { color: var(--text); font-weight: 600; }
+    .lead { font-size: clamp(16px, 1.9vw, 20px); color: var(--text); max-width: 68ch; }
+
+    /* Stat band — unused since the Key results section was cut back to its six
+       cards; kept because there is no VCS here to recover it from. */
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; margin-top: 8px; }
+    .stat { background: var(--surface); padding: 22px 20px; }
+    .stat .v { font-family: var(--font-display); font-weight: 600; font-size: clamp(24px, 3.4vw, 34px); color: var(--accent); letter-spacing: -0.01em; }
+    .stat .l { font-size: 13px; color: var(--faint); margin-top: 4px; }
+
+    /* galaxy + resolution tables */
+    .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; margin-top: 8px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14.5px; min-width: 560px; }
+    thead th { text-align: left; font-family: var(--font-mono); font-weight: 500; font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--faint); padding: 14px 18px; background: var(--bg2); border-bottom: 1px solid var(--line2); }
+    tbody td { padding: 14px 18px; border-bottom: 1px solid var(--line); color: var(--muted); }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody td:first-child { color: var(--text); font-weight: 600; }
+    tbody td .sub { color: var(--faint); font-family: var(--font-mono); font-size: 12px; }
+    .pill { display: inline-block; font-family: var(--font-mono); font-size: 11.5px; font-weight: 500; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--accent-b); color: var(--accent); background: var(--accent-d); }
+    .pill.muted { border-color: var(--line2); color: var(--faint); background: transparent; }
+    table caption, .cap { caption-side: bottom; text-align: left; color: var(--faint); font-size: 12.5px; padding: 12px 18px; }
+
+    /* cards */
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); gap: 16px; margin-top: 8px; }
+    .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 22px; transition: border-color .15s var(--ease), transform .15s var(--ease); }
+    .card:hover { border-color: var(--accent-b); transform: translateY(-2px); }
+    .card .k { font-family: var(--font-mono); font-size: 12px; color: var(--accent); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 10px; }
+    .card p { font-size: 14.5px; color: var(--muted); }
+    .card p b { color: var(--text); font-weight: 600; }
+
+    /* two-column layout for overview */
+    .two { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: clamp(28px, 5vw, 56px); align-items: start; }
+    /* grid children default to min-width:auto, which refuses to shrink below a
+       wide <pre>/<table> inside them and forces horizontal page overflow on
+       narrow screens; min-width:0 lets them shrink so inner overflow-x scrolls. */
+    .two > * { min-width: 0; }
+    .aside { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 24px; }
+    /* Overview only: the aside hangs from the <h2>, not from the section's very
+       top. The eyebrow labels the prose column, and a box level with it reads as
+       a second column of content rather than as a sidebar to the text. Offset =
+       the eyebrow's own line box plus its margin (see :root). The Data access
+       .two has no eyebrow inside it, so it is deliberately left alone. */
+    #overview .two > .aside { margin-top: calc(var(--eyebrow-size) * var(--eyebrow-lh) + var(--eyebrow-gap)); }
+    /* stacked: the aside follows the prose, so there is no heading to align to */
+    @media (max-width: 820px) {
+      .two { grid-template-columns: 1fr; }
+      #overview .two > .aside { margin-top: 0; }
+    }
+    .aside h3 { font-size: 15px; color: var(--accent); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 500; }
+    .aside ul { list-style: none; margin-top: 12px; display: grid; gap: 12px; }
+    .aside li { font-size: 14px; color: var(--muted); display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; }
+    .aside li::before { content: "→"; color: var(--accent); }
+
+    /* code / access */
+    pre { background: oklch(0.14 0.02 265); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; overflow-x: auto; font-family: var(--font-mono); font-size: 13px; color: var(--text); line-height: 1.65; margin: 8px 0 4px; }
+    pre .c { color: var(--faint); }
+    pre .p { color: var(--accent); }
+    .endpoint { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; margin: 4px 0 20px; }
+    .endpoint .lbl { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--faint); }
+    .endpoint code { font-size: 13.5px; color: var(--accent); background: var(--accent-d); padding: 4px 10px; border-radius: 6px; word-break: break-all; }
+    .steps { counter-reset: step; display: grid; gap: 18px; margin-top: 8px; }
+    .step { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: start; }
+    .step::before { counter-increment: step; content: counter(step); display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--accent-d); border: 1px solid var(--accent-b); color: var(--accent); font-family: var(--font-mono); font-weight: 600; font-size: 14px; }
+    .step h3 { margin-bottom: 4px; }
+    .step p { font-size: 14.5px; color: var(--muted); margin: 0; }
+
+    .note { font-size: 13px; color: var(--faint); border-left: 2px solid var(--line2); padding: 4px 0 4px 14px; margin-top: 14px; }
+
+    /* footer */
+    footer { padding: 40px 0 60px; color: var(--faint); font-size: 13px; }
+    .foot-row { display: flex; flex-wrap: wrap; gap: 18px; justify-content: space-between; align-items: center; }
+    .foot-links { display: flex; gap: 18px; flex-wrap: wrap; }
+
+    .hr-list { display: grid; gap: 2px; }
+    /* Phones keep the desktop header: one row, the full wordmark on the left and
+       the back link centered on the right. Only the section anchors drop out, and
+       the row tightens to buy the space they freed. */
+    @media (max-width: 560px) {
+      .topnav a:not(.back) { display: none; }
+      .topbar { gap: 12px; }
+      .topnav a { padding: 9px 10px; }
+    }
+    /* Under ~380px the wordmark leaves too little room for the label beside it, so
+       the back link becomes the arrow alone — the anchor's aria-label still names
+       it "Main site" for screen readers. */
+    @media (max-width: 380px) { .back-label { display: none; } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <a href="/new_website/"><span class="brand-name">Scott Lucchini</span></a>
+      <span class="brand-role">Computational Astrophysicist</span>
+    </div>
+    <nav class="topnav">
+      <a href="#simulations">Simulations</a>
+      <a href="#results">Results</a>
+      <a href="#access">Data access</a>
+      <a class="back" href="/new_website/" aria-label="Main site">
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="back-label">Main site</span>
+      </a>
+    </nav>
+  </header>
+
+  <!-- ─────────────── HERO ─────────────── -->
+  <section class="hero">
+    <video class="hero-video" src="/new_website/raw_data/Au6_500pc_interp.mp4" autoplay loop muted playsinline preload="auto" aria-hidden="true"></video>
+    <div class="hero-scrim" aria-hidden="true"></div>
+    <div class="wrap hero-inner">
+      <span class="badge"><span class="dot"></span>Public data release</span>
+      <h1>ENGAWA</h1>
+      <div class="expand"><b>EN</b>hanced <b>G</b>alactic <b>A</b>tmospheres <b>W</b>ith <b>A</b>repo</div>
+      <p class="lede">A suite of cosmological zoom-in simulations that resolves the circumgalactic medium of Milky&nbsp;Way-like galaxies down to <b>200&nbsp;pc</b> &mdash; using fixed-volume mesh refinement in Arepo together with the IllustrisTNG feedback model. The full snapshot and catalog data are now public via Globus.</p>
+      <p class="authors"><b>Lucchini, Abramson, Hummels, Conroy, Hernquist &amp; Smith</b> &mdash; submitted to ApJ (2026)</p>
+      <div class="cta">
+        <a class="btn primary" href="https://app.globus.org/file-manager?origin_id=a4a95e3b-cd86-4a58-acf2-d68291249997&origin_path=%2F" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+          Access data on Globus
+        </a>
+        <a class="btn" href="https://arxiv.org/abs/2603.05584" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg>
+          Read the paper (arXiv:2603.05584)
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────── OVERVIEW ─────────────── -->
+  <section class="block" id="overview">
+    <div class="wrap two">
+      <div>
+        <div class="eyebrow"><span class="num">01</span> Overview</div>
+        <h2>Resolving the atmospheres of galaxies</h2>
+        <p class="lead">The circumgalactic medium (CGM) &mdash; the diffuse gas reservoir surrounding a galaxy &mdash; regulates how galaxies accrete fuel, recycle their winds, and ultimately form stars. But it is notoriously difficult to simulate: it fills an enormous volume at very low density, is intrinsically multiphase, and is stirred by chaotic environmental effects.</p>
+        <p class="body" style="margin-top:20px;">Standard cosmological simulations use <b>mass-based refinement</b>, which pours computational power into dense, star-forming regions and leaves the low-density CGM poorly resolved. ENGAWA takes the complementary path: a <b>fixed-volume refinement</b> criterion that caps the physical size of gas cells throughout the CGM, layered on top of the usual mass refinement. This is only practical with Arepo's hybrid, moving Voronoi mesh, where individual gas cells can be refined and de-refined on the fly.</p>
+        <p class="body">The result is a consistent <b>200&nbsp;pc</b> spatial resolution maintained from the disk through the inner CGM out to 100&nbsp;kpc &mdash; higher resolution, and extended over a larger region, than any previous work &mdash; combined with the well-studied IllustrisTNG stellar and AGN feedback model. Stellar radiation is then added in post-processing with the <b>COLT</b> radiative-transfer code for realistic ion populations.</p>
+      </div>
+      <aside class="aside">
+        <ul>
+          <li><span><b style="color:var(--text)">4</b> Milky Way-like galaxies (2 Auriga, 2 TNG50)</span></li>
+          <li><span>Fixed-volume refinement to <b style="color:var(--text)">200&nbsp;pc</b>, held to 100&nbsp;kpc</span></li>
+          <li><span>Arepo moving-mesh MHD + IllustrisTNG feedback</span></li>
+          <li><span>Refinement switched on at <b style="color:var(--text)">z&nbsp;=&nbsp;0.3</b>, run 3.4&nbsp;Gyr to z&nbsp;=&nbsp;0</span></li>
+          <li><span>COLT radiative transfer for stellar ionizing radiation</span></li>
+          <li><span>Public via Globus &mdash; snapshots, group catalogs &amp; simulation outputs</span></li>
+        </ul>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ─────────────── SIMULATIONS ─────────────── -->
+  <section class="block" id="simulations">
+    <div class="wrap">
+      <div class="eyebrow"><span class="num">02</span> The simulations</div>
+      <h2>Four galaxies, three refinement levels</h2>
+      <p class="body" style="margin-bottom:28px;">The suite comprises four Milky&nbsp;Way-mass halos &mdash; two drawn from the Auriga project and two TNG50 subhalos &mdash; each re-simulated with the fixed-volume refinement scheme. Because the resolution levels are chosen so the interstellar medium stays essentially unchanged, the galaxies themselves are consistent between runs (stellar masses agree to within 4% at z&nbsp;=&nbsp;0).</p>
+
+      <h3 style="margin-bottom:12px;">The galaxies <span class="pill muted">z = 0 properties</span></h3>
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th>Galaxy</th><th>Origin</th><th>M<sub>&#9733;</sub> (10<sup>10</sup> M<sub>&#9737;</sub>)</th><th>M<sub>200</sub> (10<sup>12</sup> M<sub>&#9737;</sub>)</th><th>R<sub>200</sub> (kpc)</th><th>Max resolution</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Au6</td><td>Auriga halo 6</td><td>4.8</td><td>1.04</td><td>214</td><td><span class="pill">200 pc</span></td></tr>
+            <tr><td>Au8</td><td>Auriga halo 8</td><td>3.0</td><td>1.08</td><td>216</td><td><span class="pill muted">500 pc</span></td></tr>
+            <tr><td>TNG-A <span class="sub">(537941)</span></td><td>TNG50 subhalo</td><td>5.2</td><td>1.02</td><td>212</td><td><span class="pill">200 pc</span></td></tr>
+            <tr><td>TNG-B <span class="sub">(519311)</span></td><td>TNG50 subhalo</td><td>9.2</td><td>1.39</td><td>236</td><td><span class="pill muted">500 pc</span></td></tr>
+          </tbody>
+        </table>
+        <div class="cap">Auriga masses from Grand et&nbsp;al. (2017); TNG values from the public halo catalog. Initial conditions from the Auriga public data release and TNG50 zoom ICs.</div>
+      </div>
+
+      <h3 style="margin:36px 0 12px;">Resolution levels</h3>
+      <p class="body" style="margin-bottom:16px;">Each galaxy is run with the default mass-based scheme plus up to three fixed-volume levels. The target cell volume V<sub>target</sub> is applied within a comoving radius R<sub>ri</sub>&nbsp;=&nbsp;100&nbsp;ckpc and tapers to the default scheme by R<sub>ro</sub>&nbsp;=&nbsp;200&nbsp;ckpc; inside 0.15&nbsp;R<sub>200</sub> the disk/ISM stays at the fiducial TNG50-1 resolution.</p>
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th>Run</th><th>Refinement</th><th>V<sub>target</sub> (kpc<sup>3</sup>)</th><th>Spatial resolution</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Default</td><td>Mass-based only</td><td>&mdash;</td><td>TNG50-1 fiducial</td></tr>
+            <tr><td>1 kpc</td><td>+ fixed volume</td><td>1.0</td><td>1 kpc</td></tr>
+            <tr><td>500 pc</td><td>+ fixed volume</td><td>0.125</td><td>500 pc</td></tr>
+            <tr><td>200 pc</td><td>+ fixed volume</td><td>0.015</td><td><span class="pill">200 pc</span> (Au6, TNG-A)</td></tr>
+          </tbody>
+        </table>
+        <div class="cap">Fixed maximum target volume V<sub>target,max</sub>&nbsp;=&nbsp;100&nbsp;kpc<sup>3</sup>. The finest level is set so that mean cell sizes within the ISM match across all runs.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────── RESULTS ─────────────── -->
+  <section class="block" id="results">
+    <div class="wrap">
+      <div class="eyebrow"><span class="num">03</span> Key results</div>
+      <h2>What higher CGM resolution changes</h2>
+      <div class="cards">
+        <div class="card">
+          <div class="k">Cool gas emerges</div>
+          <p><b>H I and Mg II column densities rise by ~4 orders of magnitude</b> as resolution increases, bringing them into agreement with COS-Halos observations. Higher resolution produces many more small, cool clouds.</p>
+        </div>
+        <div class="card">
+          <div class="k">O VI stays put</div>
+          <p>Total gas and <b>O VI columns barely change</b> with resolution, but the O VI-bearing gas becomes far more filamentary and structured. As in prior work, O VI still undercuts observations by a factor of a few.</p>
+        </div>
+        <div class="card">
+          <div class="k">Radiation matters</div>
+          <p>Adding stellar ionizing radiation with COLT <b>reduces H I</b> toward observed values, while Mg II and O VI are largely unaffected &mdash; tempering the pure-resolution effect while staying consistent with data.</p>
+        </div>
+        <div class="card">
+          <div class="k">The galaxy is stable</div>
+          <p>Stellar masses, gas masses, and star-formation rates are <b>essentially unchanged</b> by the added refinement &mdash; the extra resolution reshapes the CGM without perturbing the galaxy it surrounds.</p>
+        </div>
+        <div class="card">
+          <div class="k">Cloud populations</div>
+          <p>The number of <b>small cold clouds keeps growing</b> with resolution while the count of large clouds converges. Their mass&ndash;size relation follows the local Larson relation with a slope of ~2.2.</p>
+        </div>
+        <div class="card">
+          <div class="k">Sharper interfaces</div>
+          <p>The warm intermediate-temperature <b>boundary layers around small clouds shrink</b> at higher resolution, giving sharper, more rapid transitions to the ambient CGM temperature.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────── DATA ACCESS ─────────────── -->
+  <section class="block" id="access">
+    <div class="wrap">
+      <div class="eyebrow"><span class="num">04</span> Data access</div>
+      <h2>Getting the data via Globus</h2>
+      <p class="body">The ENGAWA data are hosted on a <a href="https://www.globus.org/" target="_blank" rel="noopener noreferrer">Globus</a> collection. Globus is the standard tool for moving large scientific datasets: it manages reliable, resumable, high-throughput transfers between endpoints so you don't have to babysit multi-terabyte downloads. Access is free with any institutional or Globus ID login.</p>
+
+      <div class="endpoint">
+        <span class="lbl">Collection&nbsp;/&nbsp;endpoint&nbsp;ID</span>
+        <code>a4a95e3b-cd86-4a58-acf2-d68291249997</code>
+        <a class="btn" style="padding:8px 14px;font-size:13.5px;" href="https://app.globus.org/file-manager?origin_id=a4a95e3b-cd86-4a58-acf2-d68291249997&origin_path=%2F" target="_blank" rel="noopener noreferrer">Open in Globus web app →</a>
+      </div>
+
+      <div class="two" style="align-items:start;">
+        <div>
+          <h3 style="margin-bottom:16px;">How to access</h3>
+          <div class="steps">
+            <div class="step">
+              <div>
+                <h3>Open the collection</h3>
+                <p>Follow the <a href="https://app.globus.org/file-manager?origin_id=a4a95e3b-cd86-4a58-acf2-d68291249997&origin_path=%2F" target="_blank" rel="noopener noreferrer">file-manager link</a> and log in with your institutional identity or a free Globus ID. You'll land at the root of the ENGAWA collection.</p>
+              </div>
+            </div>
+            <div class="step">
+              <div>
+                <h3>Choose a destination</h3>
+                <p>In the second Globus pane, select where the files should go: your institution's managed endpoint, or your own laptop/desktop after installing <a href="https://www.globus.org/globus-connect-personal" target="_blank" rel="noopener noreferrer">Globus Connect Personal</a>.</p>
+              </div>
+            </div>
+            <div class="step">
+              <div>
+                <h3>Transfer</h3>
+                <p>Select the galaxies/snapshots you need and hit <b>Start</b>. Globus handles retries and integrity checks; you'll be emailed when it completes. Individual small files can also be pulled straight over HTTPS from the web view.</p>
+              </div>
+            </div>
+          </div>
+
+          <h3 style="margin:32px 0 12px;">From the command line</h3>
+          <p class="body" style="margin-bottom:6px;">With the <a href="https://docs.globus.org/cli/" target="_blank" rel="noopener noreferrer">Globus CLI</a> (<code>pip install globus-cli</code>):</p>
+<pre><span class="c"># authenticate once</span>
+globus login
+
+<span class="c"># set the ENGAWA collection as a shell variable</span>
+<span class="p">EP</span>=a4a95e3b-cd86-4a58-acf2-d68291249997
+
+<span class="c"># browse the tree</span>
+globus ls $EP:/
+globus ls $EP:/Au6/200pc/
+
+<span class="c"># recursive transfer to your endpoint (DEST_EP)</span>
+globus transfer $EP:/Au6/ <span class="p">DEST_EP</span>:/data/engawa/Au6/ \
+    --recursive --label "ENGAWA Au6"</pre>
+          <p class="note">Replace <code>DEST_EP</code> with your own endpoint UUID (<code>globus endpoint search</code> to find it). Adjust the source paths to match the layout shown at right.</p>
+        </div>
+
+        <aside class="aside">
+          <h3>File structure</h3>
+          <p style="font-size:13.5px;color:var(--muted);margin:12px 0 4px;">Data are organized by galaxy, then by refinement run. Note that Au6 nests each run under its own <code>output/</code>, while the other three fold the run into the directory name.</p>
+<pre style="margin-top:14px;font-size:12px;">/
+├── <span class="p">Au6</span>/
+│   ├── Default/output/
+│   │   ├── allclouds/ <span class="c"># cloud catalog (Au6 only)</span>
+│   │   ├── colt/      <span class="c"># COLT outputs</span>
+│   │   ├── fof_subhalo_tab_NNN.hdf5 <span class="c"># (Default only)</span>
+│   │   ├── fof_tab_NNN.hdf5
+│   │   ├── snap_NNN.hdf5
+│   │   └── cpu.txt, energy.txt, &hellip;  <span class="c"># logs</span>
+│   ├── 1kpc/output/
+│   ├── 500pc/output/   <span class="c"># + output_rerun/</span>
+│   └── 200pc/output/   <span class="c"># finest</span>
+├── <span class="p">Au8</span>/
+│   ├── output_default/
+│   ├── output_1kpc/
+│   └── output_500pc/   <span class="c"># finest</span>
+├── <span class="p">TNGA</span>/
+│   ├── output_default/
+│   ├── output_1kpc/
+│   ├── output_500pc/
+│   └── output/         <span class="c"># 200 pc, finest</span>
+└── <span class="p">TNGB</span>/
+    ├── output_default/
+    ├── output_1kpc/
+    └── output_500pc/   <span class="c"># finest</span></pre>
+          <p style="font-size:13.5px;color:var(--muted);margin:14px 0 0;">Subfind catalogs are present for the Default resolution runs of all galaxies. Group catalogs and snapshots are split across 64 files contained within <code>snapdir_NNN/</code> folders. Au6 additionally carries an <code>allclouds/</code> cloud catalog, and its COLT files are split by escape fraction (<code>colt_139_25fesc.hdf5</code>).</p>
+          <p style="font-size:13.5px;color:var(--muted);margin:14px 0 0;">All Default runs contain 140 snapshots following output_list_default.txt (every 50 Myrs at late times). The 1 kpc and 200 pc runs follow the same snapshot spacing running from 69&ndash;139, while the 500 pc runs include additional snapshots (every 10 Myrs): 69&ndash;422.</p>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────── CITATION ─────────────── -->
+  <section class="block" id="cite">
+    <div class="wrap">
+      <div class="eyebrow"><span class="num">05</span> Citation</div>
+      <h2>Using ENGAWA in your work</h2>
+      <p class="body">If you use these simulations, please cite the ENGAWA paper. Please also acknowledge the <a href="https://wwwmpa.mpa-garching.mpg.de/auriga/data" target="_blank" rel="noopener noreferrer">Auriga</a> and <a href="https://www.tng-project.org" target="_blank" rel="noopener noreferrer">IllustrisTNG</a> projects, whose initial conditions and feedback model this suite builds on.</p>
+<pre>@article{Lucchini2026_ENGAWA,
+  <span class="p">author</span>  = {Lucchini, S. and Abramson, C. and Hummels, C. and
+             Conroy, C. and Hernquist, L. and Smith, A.},
+  <span class="p">title</span>   = {{ENhanced Galactic Atmospheres With Arepo:
+             Resolving the CGM at 200 pc with the ENGAWA Simulations}},
+  <span class="p">journal</span> = {submitted to ApJ},
+  <span class="p">year</span>    = {2026},
+  <span class="p">eprint</span>  = {2603.05584},
+  <span class="p">archivePrefix</span> = {arXiv}
+}</pre>
+      <!-- <div class="cta" style="margin-top:24px;">
+        <a class="btn" href="https://arxiv.org/abs/2603.05584" target="_blank" rel="noopener noreferrer">arXiv:2603.05584</a>
+        <a class="btn" href="https://app.globus.org/file-manager?origin_id=a4a95e3b-cd86-4a58-acf2-d68291249997&origin_path=%2F" target="_blank" rel="noopener noreferrer">Globus collection</a>
+        <a class="btn" href="mailto:scott.lucchini@cfa.harvard.edu">Contact the author</a>
+      </div> -->
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap foot-row">
+      <span>&copy; <span id="yr"></span> Scott Lucchini &middot; ENGAWA data release</span>
+      <span class="foot-links">
+        <a href="/new_website/">Research site</a>
+        <a href="https://arxiv.org/abs/2603.05584" target="_blank" rel="noopener noreferrer">Paper</a>
+        <a href="https://orcid.org/0000-0001-9982-0241" target="_blank" rel="noopener noreferrer">ORCID</a>
+      </span>
+    </div>
+  </footer>
+  <script>document.getElementById("yr").textContent = new Date().getFullYear();</script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+# Source HDF5 density grids — 128 MB each, over GitHub's 100 MB hard limit, and not
+# needed to serve the site. These are the inputs the viz cubes under assets/viz/ are
+# generated from; see "Regenerating the volume viz assets from HDF5" in README.md.
+raw_data/*.h5
+
+# Unreferenced alternate cut of the hero movie (21 MB); data.js uses Au6_500pc_interp.mp4.
+raw_data/Au6_500pc_interp_square.mp4
+
+# Pre-re-encode original of the ISM movie (74 MB). The 17.6 MB CRF 26 version is the one
+# the site loads; this is kept locally only so the re-encode is reversible.
+raw_data/*.orig.mp4
+
+# Local editor / tooling state
+.claude/
+.DS_Store

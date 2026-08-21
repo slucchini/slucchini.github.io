@@ -1,0 +1,106 @@
+{
+  "snapshots": [
+    {
+      "index": 190,
+      "time_code": 1.9,
+      "time_gyr": 1.8578,
+      "assetBase": "snap_190/"
+    },
+    {
+      "index": 200,
+      "time_code": 2.0,
+      "time_gyr": 1.9556,
+      "assetBase": "snap_200/"
+    },
+    {
+      "index": 210,
+      "time_code": 2.1,
+      "time_gyr": 2.0534,
+      "assetBase": "snap_210/"
+    },
+    {
+      "index": 220,
+      "time_code": 2.2,
+      "time_gyr": 2.1511,
+      "assetBase": "snap_220/"
+    },
+    {
+      "index": 230,
+      "time_code": 2.3,
+      "time_gyr": 2.2489,
+      "assetBase": "snap_230/"
+    },
+    {
+      "index": 240,
+      "time_code": 2.4,
+      "time_gyr": 2.3467,
+      "assetBase": "snap_240/"
+    },
+    {
+      "index": 250,
+      "time_code": 2.5,
+      "time_gyr": 2.4445,
+      "assetBase": "snap_250/"
+    },
+    {
+      "index": 260,
+      "time_code": 2.6,
+      "time_gyr": 2.5423,
+      "assetBase": "snap_260/"
+    },
+    {
+      "index": 270,
+      "time_code": 2.7,
+      "time_gyr": 2.64,
+      "assetBase": "snap_270/"
+    },
+    {
+      "index": 280,
+      "time_code": 2.8,
+      "time_gyr": 2.7378,
+      "assetBase": "snap_280/"
+    },
+    {
+      "index": 290,
+      "time_code": 2.9,
+      "time_gyr": 2.8356,
+      "assetBase": "snap_290/"
+    },
+    {
+      "index": 300,
+      "time_code": 3.0,
+      "time_gyr": 2.9334,
+      "assetBase": "snap_300/"
+    },
+    {
+      "index": 310,
+      "time_code": 3.1,
+      "time_gyr": 3.0312,
+      "assetBase": "snap_310/"
+    },
+    {
+      "index": 320,
+      "time_code": 3.2,
+      "time_gyr": 3.1289,
+      "assetBase": "snap_320/"
+    },
+    {
+      "index": 330,
+      "time_code": 3.3,
+      "time_gyr": 3.2267,
+      "assetBase": "snap_330/"
+    },
+    {
+      "index": 340,
+      "time_code": 3.4,
+      "time_gyr": 3.3245,
+      "assetBase": "snap_340/"
+    },
+    {
+      "index": 347,
+      "time_code": 3.47,
+      "time_gyr": 3.3929,
+      "assetBase": "snap_347/"
+    }
+  ]
+}
