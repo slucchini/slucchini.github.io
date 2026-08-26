@@ -990,3 +990,17 @@ sub {
   border: 1px solid var(--line); border-radius: 999px; padding: 8px 16px;
   backdrop-filter: blur(6px);
 }
+
+/* ── Boot veil ──────────────────────────────────────────────────────────────
+   Opaque sheet over the whole page on a direct load of home, lifted once the
+   hero movie has decoded its first frame (see app.js BOOT_VEIL_MAX_MS) so the
+   lighter poster still never flashes ahead of the movie. Lives inside #root
+   (z-index 2), which already stacks above the #viz-stage canvas, so this one
+   value only has to clear the topbar (40). Never captures clicks. */
+.boot-veil {
+  position: fixed; inset: 0; z-index: 100;
+  background: var(--bg);
+  pointer-events: none;
+  transition: opacity 0.5s var(--ease);
+}
+.boot-veil.gone { opacity: 0; }

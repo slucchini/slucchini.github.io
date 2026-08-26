@@ -84,7 +84,8 @@ function HomePanel({
   goById,
   volumeReady,
   morphIn,
-  leaving
+  leaving,
+  onHeroReady
 }) {
   // The total-gas volume is rendered BEHIND the hero movie at the movie's
   // inclination. When arriving here from another area (morphIn), keep the movie
@@ -130,7 +131,16 @@ function HomePanel({
     className: heroBgClass + " home-hero-video",
     src: area.heroVideo, poster: area.heroImage,
     autoPlay: true, loop: true, playsInline: true, preload: "auto",
-    ref: el => { if (el) el.muted = true; },
+    // onLoadedData = readyState 2: frame 0 is decoded and will paint the moment
+    // the veil lifts. onError releases the veil too, so a movie that can't load
+    // degrades to the poster instead of to a page held dark until the fallback.
+    onLoadedData: onHeroReady, onError: onHeroReady,
+    ref: el => {
+      if (!el) return;
+      el.muted = true;
+      // a cached movie can reach readyState 2 before React binds the listener
+      if (el.readyState >= 2 && onHeroReady) onHeroReady();
+    },
     "aria-hidden": "true"
   }) : /*#__PURE__*/React.createElement("div", {
     className: heroBgClass,
@@ -1054,6 +1064,20 @@ function App() {
   const navigatedRef = useRef(false);
   const [loading, setLoading] = useState(false);
   const [volumeReady, setVolumeReady] = useState(false);
+  // Boot veil: on a direct load of home, the page sits behind an opaque sheet
+  // until the hero movie can paint its first frame. Without it the poster still
+  // (a DIFFERENT render, and ~4x lighter, so it always wins the race against the
+  // 5 MB mp4) flashes up first and then swaps to the movie. Only the first
+  // render can arm it, so navigating back to home never re-veils.
+  // Knob: the sheet's own fade-out lives in styles.css (.boot-veil transition).
+  const BOOT_VEIL_MAX_MS = 4000;   // never hold a blank page longer than this
+  const [booted, setBooted] = useState(() => !(AREAS[idx].kind === "home" && AREAS[idx].heroVideo));
+  const markBooted = useCallback(() => setBooted(true), []);
+  useEffect(() => {
+    if (booted) return;
+    const t = setTimeout(markBooted, BOOT_VEIL_MAX_MS);
+    return () => clearTimeout(t);
+  }, [booted]);
   const [timeline, setTimeline] = useState(null);
   const [preload, setPreload] = useState(null);
   const area = AREAS[idx];
@@ -1198,7 +1222,10 @@ function App() {
     style: {
       "--hue": hue
     }
-  }, /*#__PURE__*/React.createElement("header", {
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "boot-veil" + (booted ? " gone" : ""),
+    "aria-hidden": "true"
+  }), /*#__PURE__*/React.createElement("header", {
     className: "topbar"
   }, /*#__PURE__*/React.createElement("a", {
     className: "brand" + (idx === 0 ? " is-home" : ""),
@@ -1253,7 +1280,8 @@ function App() {
     goById: goById,
     volumeReady: volumeReady,
     morphIn: navigatedRef.current,
-    leaving: homeLeaving
+    leaving: homeLeaving,
+    onHeroReady: markBooted
   }) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("section", {
     className: "hero"
   }, /*#__PURE__*/React.createElement("div", {
