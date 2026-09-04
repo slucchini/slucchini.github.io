@@ -206,10 +206,7 @@ function HomePanel({
     },
     onClick: () => goById(j.to)
   }, /*#__PURE__*/React.createElement("span", {
-    className: "jump-label",
-    style: {
-      color: "rgb(255, 255, 255)"
-    }
+    className: "jump-label"
   }, j.label), /*#__PURE__*/React.createElement("span", {
     className: "jump-note",
     style: {

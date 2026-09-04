@@ -777,14 +777,17 @@ sub {
   border-radius: 14px; padding: 20px 20px 18px; position: relative;
   transition: border-color 0.25s var(--ease), transform 0.25s var(--ease), box-shadow 0.25s;
 }
-.jump-card::before {
-  content: ""; position: absolute; left: 0; top: 18px; bottom: 18px; width: 3px;
-  border-radius: 3px; background: oklch(0.82 0.135 var(--jhue)); opacity: 0.85;
-}
-[data-theme="editorial"] .jump-card::before { background: oklch(0.55 0.155 var(--jhue)); }
 .jump-card:hover { border-color: oklch(0.82 0.135 var(--jhue) / 0.5); transform: translateY(-3px); box-shadow: 0 26px 54px -42px oklch(0.82 0.135 var(--jhue) / 0.5); }
-.jump-label { font-family: var(--font-display); font-weight: 600; font-size: 18.7px; letter-spacing: -0.01em; padding-left: 14px; }
-.jump-note { font-size: 14.3px; line-height: 1.5; color: var(--muted); padding-left: 14px; }
+/* The card's hue used to be carried by a rule on the left edge; now the title
+   carries it instead — pulled toward the text color (less chroma, closer
+   lightness) so it reads as a tint rather than as a link. The arrow keeps the
+   full accent, so each card still has one saturated hue cue. */
+.jump-label {
+  font-family: var(--font-display); font-weight: 600; font-size: 18.7px;
+  letter-spacing: -0.01em; color: oklch(0.90 0.072 var(--jhue));
+}
+[data-theme="editorial"] .jump-label { color: oklch(0.42 0.105 var(--jhue)); }
+.jump-note { font-size: 14.3px; line-height: 1.5; color: var(--muted); }
 .jump-arrow { position: absolute; right: 18px; top: 18px; color: oklch(0.82 0.135 var(--jhue)); transition: transform 0.25s var(--ease); }
 [data-theme="editorial"] .jump-arrow { color: oklch(0.55 0.155 var(--jhue)); }
 .jump-card:hover .jump-arrow { transform: translateX(4px); }
