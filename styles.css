@@ -223,7 +223,13 @@ main { flex: 1; overflow: hidden; position: relative; }
    dia/mag); CSS only parks and styles them. */
 .sne-lens-panel {
   position: absolute; z-index: 2;
-  right: clamp(72px, 7vw, 112px); top: 50%; transform: translateY(-50%);
+  /* Docked in the movie's right gutter, but only out to a ~1800px-wide window:
+     past that the second term wins and the panel's right edge stays a fixed
+     788px right of the page center (= where the clamp parks it at 1800px), so
+     the lens holds its place instead of drifting off to the far corner of a big
+     monitor. 50% is the hero box, which is full-bleed, so it is the page center. */
+  right: max(clamp(72px, 7vw, 112px), 50% - 788px);
+  top: 50%; transform: translateY(-50%);
   pointer-events: none;
   opacity: 0; visibility: hidden;
   transition: opacity 0.18s var(--ease), visibility 0.18s;
