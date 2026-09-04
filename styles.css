@@ -283,8 +283,15 @@ main { flex: 1; overflow: hidden; position: relative; }
    center the hint just above the scrub bar instead */
 @media (pointer: coarse) {
   .lens-hint {
-    left: 0; right: 0; bottom: 82px; text-align: center; font-size: 11px;
+    left: 0; right: 0; bottom: 100px; text-align: center; font-size: 11px;
   }
+}
+/* Same move on narrow desktops. The scrub bar is a centred 448px box and the
+   hint is right-anchored and ~390px wide, so below ~1270px the hint's leading
+   words slide under the bar — invisible while the bar was frameless, frosted
+   now that it has one. Above that width the two clear each other. */
+@media (max-width: 1280px) {
+  .lens-hint { left: 0; right: 0; bottom: 100px; text-align: center; }
 }
 
 /* Mobile-only gesture guard: on touch devices one finger scrolls the page and
@@ -313,10 +320,20 @@ main { flex: 1; overflow: hidden; position: relative; }
   .touch-gesture { transition: none; }
 }
 
-/* ISM: movie scrubber + speed toggle, bottom-center; fades in with the movie */
+/* ISM: movie scrubber + speed toggle, bottom-center; fades in with the movie.
+   Glass chip, same recipe as .viz-controls / .hero-viz-tag. It is not just
+   decoration: the SNe reticle shares this z-index and paints *before* it, so
+   the ring is already behind the bar — but with nothing to be behind, the ring
+   showed straight through the transparent gaps and the 16%-alpha 1x button and
+   read as sitting on top. The blur gives it something to be behind. The width
+   carries the horizontal padding so the slider keeps its old length. */
 .movie-scrub {
   position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%);
-  z-index: 2; width: min(420px, 80vw);
+  z-index: 2; width: min(448px, 84vw);
+  padding: 10px 14px 8px;
+  background: color-mix(in oklch, var(--bg) 64%, transparent);
+  backdrop-filter: blur(8px) saturate(1.1);
+  border: 1px solid var(--line); border-radius: 12px;
   opacity: 0; transition: opacity 0.8s var(--ease);
   pointer-events: none;
 }
