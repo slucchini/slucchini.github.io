@@ -129,7 +129,7 @@ const AREAS = [
     eyebrow: "Public data release",
     text: "The ENGAWA simulations are now public. This suite of cosmological zoom-in simulations resolves the circumgalactic medium of four Milky Way-like galaxies down to 200 pc using fixed-volume mesh refinement in Arepo with the IllustrisTNG feedback model. Full snapshots, group catalogs, and additional output files are freely available via Globus.",
     linkLabel: "Explore the ENGAWA data release",
-    href: "/new_website/engawa/"
+    href: "engawa/"
   },
   stats: [{
     v: "4",
