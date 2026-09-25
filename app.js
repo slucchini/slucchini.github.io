@@ -1050,9 +1050,14 @@ function VizControls({ area, loading, timeline, preload }) {
 
 function App() {
   const t = TWEAKS;
+  // A bare load of the site ALWAYS opens home. The area is not persisted across
+  // loads — only ?area=<id> can start anywhere else. That parameter is what the
+  // back/forward history entries below are made of, so it doubles as the URL
+  // you can link to, bookmark, or reload into while working on one area's viz.
   const [idx, setIdx] = useState(() => {
-    const n = parseInt(localStorage.getItem("sl_area") || "0", 10);
-    return Number.isFinite(n) && n >= 0 && n < AREAS.length ? n : 0;
+    const want = new URLSearchParams(location.search).get("area");
+    const n = want ? AREAS.findIndex(a => a.id === want) : -1;
+    return n >= 0 ? n : 0;
   });
   const [dir, setDir] = useState(1);
   // false on the initial render; flips true the first time the user navigates,
@@ -1098,11 +1103,7 @@ function App() {
     const doGo = (nn, dd) => {
       navigatedRef.current = true;
       setDir(dd);
-      setIdx(cur => {
-        const next = (nn + AREAS.length) % AREAS.length;
-        localStorage.setItem("sl_area", String(next));
-        return next;
-      });
+      setIdx((nn + AREAS.length) % AREAS.length);
     };
     const preShow = next => {
       const t = AREAS[next];
@@ -1141,6 +1142,51 @@ function App() {
       behavior: "smooth"
     });
   }, [go, idx]);
+
+  // ── Back / forward ────────────────────────────────────────────────────────
+  // Each area is its own history entry: home is the bare URL, the others carry
+  // ?area=<id> (any other query param — ?perf=1 — and the hash ride along).
+  // The entry is written from idx in an effect rather than at the ~6 call sites
+  // that navigate, so every route in (jump cards, tabs, arrows, arrow keys, the
+  // brand link) gets exactly one entry, and a click that RETARGETS a departure
+  // from home mid-fade still gets one rather than two.
+  const firstUrlSyncRef = useRef(true);
+  const fromPopRef = useRef(false);   // this idx change came from the back button
+  useEffect(() => {
+    // The stage swaps pages instantly, so the browser's own scroll restore has
+    // nothing valid to restore onto; popstate scrolls to top like a click does.
+    if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+  }, []);
+  useEffect(() => {
+    // On a popstate the browser has ALREADY moved the URL; pushing here would
+    // put the entry we just navigated away from back on top of the stack.
+    if (fromPopRef.current) { fromPopRef.current = false; return; }
+    const st = { slArea: AREAS[idx].id };
+    if (firstUrlSyncRef.current) {
+      firstUrlSyncRef.current = false;
+      history.replaceState(st, "");   // stamp the entry we loaded into, URL as-is
+      return;
+    }
+    const sp = new URLSearchParams(location.search);
+    if (idx === 0) sp.delete("area"); else sp.set("area", AREAS[idx].id);
+    const q = sp.toString();
+    history.pushState(st, "", location.pathname + (q ? "?" + q : "") + location.hash);
+  }, [idx]);
+  useEffect(() => {
+    const onPop = e => {
+      // Fall back to the URL for entries pushed before this code existed (or by
+      // a hand-edited address bar), and to home for anything unrecognised.
+      const id = (e.state && e.state.slArea) || new URLSearchParams(location.search).get("area");
+      const n = id ? AREAS.findIndex(a => a.id === id) : 0;
+      const to = n >= 0 ? n : 0;
+      if (to === idxRef.current) return;
+      fromPopRef.current = true;
+      go(to, to > idxRef.current ? 1 : -1);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [go]);
   useEffect(() => {
     const onKey = e => {
       if (e.target.closest && e.target.closest("input,textarea,select")) return;
