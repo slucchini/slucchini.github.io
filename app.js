@@ -326,6 +326,19 @@ const callViz = (fn, ...args) => {
   // that settles when the new cubes are actually on screen
   if (window.SLViz && typeof window.SLViz[fn] === "function") return window.SLViz[fn](...args);
 };
+// Analytics: a GA4 "viz_interact" event the first time each control is used
+// in each area (per page load) — enough to see which controls people actually
+// touch, without an event per drag frame. gtag() comes from index.html; off
+// the live hostname it only queues to window.dataLayer.
+const vizTracked = new Set();
+const trackViz = (control, areaId) => {
+  const area = areaId || new URLSearchParams(location.search).get("area") ||
+    (window.AREAS && window.AREAS[0].id);
+  const key = area + ":" + control;
+  if (vizTracked.has(key) || typeof window.gtag !== "function") return;
+  vizTracked.add(key);
+  window.gtag("event", "viz_interact", { area, control });
+};
 // touch device? (no hover, so hover-driven affordances need a tap equivalent)
 function coarsePointer() {
   return typeof window !== "undefined" && !!window.matchMedia &&
@@ -364,6 +377,7 @@ function VolumeControls({ area }) {
   // twice. The button goes busy meanwhile so the click still feels immediate.
   const changeField = key => {
     if (key === field) return;
+    trackViz("species");
     setField(key);
     const c = fieldCb(key);
     setCbLo(c.lo); setCbHi(c.hi);
@@ -372,7 +386,7 @@ function VolumeControls({ area }) {
       .catch(() => {})
       .then(() => setBusyField(b => (b === key ? null : b)));
   };
-  const changeCb = (lo, hi) => { setCbLo(lo); setCbHi(hi); callViz("setVolumeColorbar", lo, hi); };
+  const changeCb = (lo, hi) => { trackViz("colorbar"); setCbLo(lo); setCbHi(hi); callViz("setVolumeColorbar", lo, hi); };
   // each area re-frames at 1x zoom, default field, and that field's color scale
   useEffect(() => {
     setZoom(defaultZoom); setField(defaultField);
@@ -399,10 +413,10 @@ function VolumeControls({ area }) {
     className: "vc-seg"
   }, /*#__PURE__*/React.createElement("button", {
     className: mode === "integral" ? "active" : "",
-    onClick: () => { setMode("integral"); callViz("setVolumeMode", "integral"); }
+    onClick: () => { trackViz("mode"); setMode("integral"); callViz("setVolumeMode", "integral"); }
   }, "Column"), /*#__PURE__*/React.createElement("button", {
     className: mode === "volume" ? "active" : "",
-    onClick: () => { setMode("volume"); callViz("setVolumeMode", "volume"); }
+    onClick: () => { trackViz("mode"); setMode("volume"); callViz("setVolumeMode", "volume"); }
   }, "Volume"))), showColorbar && /*#__PURE__*/React.createElement("label", null, "Scale min", /*#__PURE__*/React.createElement("input", {
     type: "range", min: "-0.5", max: "0.9", step: "0.02", value: cbLo,
     onChange: e => changeCb(parseFloat(e.target.value), cbHi)
@@ -411,10 +425,10 @@ function VolumeControls({ area }) {
     onChange: e => changeCb(cbLo, parseFloat(e.target.value))
   })), showZoom && /*#__PURE__*/React.createElement("label", null, "Zoom", /*#__PURE__*/React.createElement("input", {
     type: "range", min: "0.6", max: "2.5", step: "0.05", value: zoom,
-    onChange: e => { const v = parseFloat(e.target.value); setZoom(v); callViz("setZoom", v); }
+    onChange: e => { const v = parseFloat(e.target.value); trackViz("zoom"); setZoom(v); callViz("setZoom", v); }
   })), showColorbar && mode === "volume" && /*#__PURE__*/React.createElement("label", null, "Opacity", /*#__PURE__*/React.createElement("input", {
     type: "range", min: "0.1", max: "3", step: "0.05", value: opacity,
-    onChange: e => { const v = parseFloat(e.target.value); setOpacity(v); callViz("setVolumeOpacity", v); }
+    onChange: e => { const v = parseFloat(e.target.value); trackViz("opacity"); setOpacity(v); callViz("setVolumeOpacity", v); }
   })));
 }
 
@@ -430,6 +444,7 @@ function CompareSlider({ area }) {
 
   const apply = useCallback(f => {
     const v = Math.min(1, Math.max(0, f));
+    trackViz("compare");
     setSplit(v);
     callViz("setSplit", v);
   }, []);
@@ -577,6 +592,7 @@ function MovieScrub({ videoRef, active }) {
     return () => { v.removeEventListener("play", on); v.removeEventListener("pause", off); };
   }, []);
   const togglePlay = () => {
+    trackViz("play");
     const v = videoRef.current;
     if (!v) return;
     if (v.paused) { const p = v.play(); if (p && p.catch) p.catch(() => {}); }
@@ -596,6 +612,7 @@ function MovieScrub({ videoRef, active }) {
     return () => cancelAnimationFrame(raf);
   }, []);
   const seek = e => {
+    trackViz("scrub");
     const v = videoRef.current;
     if (!v || !v.duration) return;
     try { v.currentTime = parseFloat(e.target.value); } catch (err) {}
@@ -632,7 +649,7 @@ function MovieScrub({ videoRef, active }) {
     key: r,
     className: rate === r ? "active" : "",
     "aria-pressed": rate === r,
-    onClick: () => setRate(r)
+    onClick: () => { trackViz("speed"); setRate(r); }
   }, (r === 1 ? "1" : "\xBD") + "\xD7")))), /*#__PURE__*/React.createElement("span", {
     className: "scrub-frame", ref: labelRef
   }, "frame 0000")));
@@ -912,6 +929,7 @@ function SneLens({ area, videoRef }) {
       const fy = (cy - (r.top + (r.height - side) / 2)) / side;
       if (fx < 0 || fx > 1 || fy < 0 || fy > 1) return;
       const half = s.data ? s.data.meta.extent_kpc[1] : 15;
+      trackViz("magnifier_pin");
       s.pin = {
         x: fx * 2 * half - half,      // kpc at pin time
         y: half - fy * 2 * half,
@@ -978,8 +996,8 @@ const MAG_COMPONENTS = [
 function ComponentToggles() {
   const [vis, setVis] = useState({ mw: true, lmc: true });
   const [orbits, setOrbits] = useState(true);
-  const toggle = k => { const nv = { ...vis, [k]: !vis[k] }; setVis(nv); callViz("setIsoVisible", k, nv[k]); };
-  const toggleOrbits = () => { const nv = !orbits; setOrbits(nv); callViz("setOrbitsVisible", nv); };
+  const toggle = k => { trackViz("components"); const nv = { ...vis, [k]: !vis[k] }; setVis(nv); callViz("setIsoVisible", k, nv[k]); };
+  const toggleOrbits = () => { trackViz("orbits"); const nv = !orbits; setOrbits(nv); callViz("setOrbitsVisible", nv); };
   return /*#__PURE__*/React.createElement("div", {
     className: "viz-controls viz-legend"
   }, MAG_COMPONENTS.map(c => /*#__PURE__*/React.createElement("button", {
@@ -1021,7 +1039,7 @@ function TimeBar({ timeline, preload }) {
   const t0 = snaps[n - 1].time_gyr;
   const snapIdx = (n - 1) - v;
   const dt = snaps[snapIdx].time_gyr - t0;
-  const onChange = e => { const pos = parseInt(e.target.value, 10); setV((n - 1) - pos); callViz("setSnapshot", pos); };
+  const onChange = e => { trackViz("timeline"); const pos = parseInt(e.target.value, 10); setV((n - 1) - pos); callViz("setSnapshot", pos); };
   const frac = n > 1 ? snapIdx / (n - 1) : 0;
   // keep the label centered under the 14px thumb across the track
   const labelLeft = `calc(${frac} * (100% - 14px) + 7px)`;
@@ -1221,6 +1239,7 @@ function App() {
       offs.push(window.SLViz.on("volume-ready", () => setVolumeReady(true)));
       offs.push(window.SLViz.on("iso-ready", tl => setTimeline(tl)));
       offs.push(window.SLViz.on("preload", (l, tt) => setPreload({ l, t: tt })));
+      offs.push(window.SLViz.on("rotate", id => trackViz("rotate", id)));
       return true;
     };
     if (attach()) return () => offs.forEach(f => f && f());

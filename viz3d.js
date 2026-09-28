@@ -911,6 +911,8 @@ class Stage extends Emitter {
       c.touches.ONE = null;                       // one finger → page scroll
       c.touches.TWO = THREE.TOUCH.DOLLY_ROTATE;   // two fingers → rotate + pinch
     }
+    // a user drag began (not autoRotate/damping) — for the site's analytics
+    c.addEventListener("start", () => this.emit("rotate", this._currentId));
     c.target.copy(target);
     c.update();
     this.controls = c;

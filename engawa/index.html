@@ -251,6 +251,21 @@
        it "Main site" for screen readers. */
     @media (max-width: 380px) { .back-label { display: none; } }
   </style>
+  <!-- Google tag (gtag.js). Loaded only on the live hostname so local/dev
+       reloads don't count; gtag() still exists everywhere, and off-site its
+       calls just queue in window.dataLayer (handy for checking events). -->
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    if (/^(www\.)?scottlucchini\.com$/.test(location.hostname)) {
+      var ga = document.createElement("script");
+      ga.async = true;
+      ga.src = "https://www.googletagmanager.com/gtag/js?id=G-YD64EP13YB";
+      document.head.appendChild(ga);
+      gtag('js', new Date());
+      gtag('config', 'G-YD64EP13YB');
+    }
+  </script>
 </head>
 <body>
   <header class="topbar">
