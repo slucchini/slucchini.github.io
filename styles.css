@@ -745,7 +745,15 @@ sub {
 .home-bio p { font-size: clamp(16px, 1.65vw, 18.2px); line-height: 1.66; color: var(--muted); text-wrap: pretty; }
 
 .home-contact { border-top: 1px solid var(--line); padding-top: clamp(16px, 2.5vw, 24px); }
-.contact-grid { display: grid; grid-template-columns: 110px repeat(4, 1fr); gap: 12px; align-items: center; }
+.contact-grid { display: grid; grid-template-columns: 110px 1fr; gap: 12px; align-items: center; }
+/* Each box starts at the width of its own text (never wrapping it) and the
+   leftover width is shared out evenly. The boxes come in two groups (email +
+   ORCID, then the rest) that never break apart, so when one row is too narrow
+   it splits 2 + 3 rather than stranding the last box on its own. */
+.contact-boxes { display: flex; flex-wrap: wrap; gap: 12px; }
+.contact-group { display: flex; gap: 12px; flex: 2 0 auto; }
+.contact-group + .contact-group { flex-grow: 3; } /* 2 : 3 boxes, so each box gets an equal share */
+.contact-group .contact { flex: 1 0 auto; }
 .contact-photo { width: 110px; height: 110px; border-radius: 50%; overflow: hidden; flex: none; }
 .contact-photo img { width: 100%; height: 100%; object-fit: cover; object-position: center 10%; display: block; }
 .contact {
@@ -755,6 +763,7 @@ sub {
 }
 .contact:hover { border-color: var(--accent-b); background: var(--accent-d); transform: translateY(-2px); box-shadow: 0 18px 40px -34px var(--glow); }
 .contact-label { font-family: var(--font-mono); font-size: 11.6px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); }
+.contact-label, .contact-value { white-space: nowrap; }
 .contact-value { font-size: 15.4px; color: var(--text); }
 .contact.is-ph .contact-value { color: var(--faint); font-style: italic; }
 .contact.is-ph { border-style: dashed; }
@@ -821,8 +830,7 @@ sub {
   .tab-l { font-size: 14.5px; }
   .pub-figs .ph-stripe { aspect-ratio: 16/10; }
   .foot { flex-wrap: wrap; }
-  .contact-grid { grid-template-columns: 110px 1fr; }
-  .contact-photo { grid-row: 1 / span 4; align-self: center; }
+  .contact-boxes, .contact-group { flex-direction: column; gap: 8px; }
   .contact { padding: 8px 12px; }
   .contact-label { font-size: 10.5px; }
   .contact-value { font-size: 13.8px; }

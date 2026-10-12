@@ -65,6 +65,10 @@ const AREAS = [
     label: "ADS Library",
     value: "Publications",
     href: "https://ui.adsabs.harvard.edu/user/libraries/VAnooruRTeOhUxd-WxsuWA"
+  }, {
+    label: "CV",
+    value: "PDF",
+    href: "Lucchini_CV_public.pdf"
   }],
   // quick-jump cards into the three research areas
   jump: [{

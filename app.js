@@ -261,17 +261,22 @@ function HomePanel({
       height: "100px",
       objectFit: "fill"
     }
-  })), area.contacts.map(c => /*#__PURE__*/React.createElement("a", {
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "contact-boxes"
+  }, [area.contacts.slice(0, 2), area.contacts.slice(2)].map((group, gi) => /*#__PURE__*/React.createElement("div", {
+    key: gi,
+    className: "contact-group"
+  }, group.map(c => /*#__PURE__*/React.createElement("a", {
     key: c.label,
     className: "contact" + (c.placeholder ? " is-ph" : ""),
     href: c.href,
-    target: c.href.startsWith("http") ? "_blank" : undefined,
+    target: c.href.startsWith("http") || c.href.endsWith(".pdf") ? "_blank" : undefined,
     rel: "noopener noreferrer"
   }, /*#__PURE__*/React.createElement("span", {
     className: "contact-label"
   }, c.label), /*#__PURE__*/React.createElement("span", {
     className: "contact-value"
-  }, c.value)))))));
+  }, c.value))))))))));
 }
 
 // ── Per-area content stage ──
